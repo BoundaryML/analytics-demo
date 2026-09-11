@@ -1,0 +1,568 @@
+<title>Address Pipeline Run Report</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    color-scheme: light;
+    --page: #f6f6f3;
+    --surface: #fcfcfb;
+    --ink: #0b0b0b;
+    --ink-2: #52514e;
+    --muted: #898781;
+    --grid: #e1e0d9;
+    --axis: #c3c2b7;
+    --ring: rgba(11, 11, 11, 0.10);
+    --blue: #2a78d6;
+    --blue-soft: #86b6ef;
+    --orange: #eb6834;
+    --seq-1: #cde2fb; --seq-2: #9ec5f4; --seq-3: #5598e7; --seq-4: #256abf; --seq-5: #104281;
+    --good-text: #006300;
+    --sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --page: #0d0d0d;
+      --surface: #1a1a19;
+      --ink: #ffffff;
+      --ink-2: #c3c2b7;
+      --muted: #898781;
+      --grid: #2c2c2a;
+      --axis: #383835;
+      --ring: rgba(255, 255, 255, 0.10);
+      --blue: #3987e5;
+      --blue-soft: #1c5cab;
+      --orange: #d95926;
+      --seq-1: #184f95; --seq-2: #1c5cab; --seq-3: #2a78d6; --seq-4: #5598e7; --seq-5: #9ec5f4;
+      --good-text: #0ca30c;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --page: #0d0d0d;
+    --surface: #1a1a19;
+    --ink: #ffffff;
+    --ink-2: #c3c2b7;
+    --muted: #898781;
+    --grid: #2c2c2a;
+    --axis: #383835;
+    --ring: rgba(255, 255, 255, 0.10);
+    --blue: #3987e5;
+    --blue-soft: #1c5cab;
+    --orange: #d95926;
+    --seq-1: #184f95; --seq-2: #1c5cab; --seq-3: #2a78d6; --seq-4: #5598e7; --seq-5: #9ec5f4;
+    --good-text: #0ca30c;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--page);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 14px;
+    line-height: 1.45;
+    padding-block: 32px 64px;
+    padding-inline: 20px;
+  }
+  .wrap { max-width: 1120px; margin-inline: auto; display: grid; gap: 20px; }
+
+  header { display: grid; gap: 6px; padding-bottom: 8px; }
+  header h1 { font-size: 22px; font-weight: 600; margin: 0; letter-spacing: -0.01em; text-wrap: balance; }
+  header p { margin: 0; color: var(--ink-2); max-width: 65ch; }
+  .runmeta {
+    font-family: var(--mono); font-size: 12px; color: var(--muted);
+    display: flex; flex-wrap: wrap; gap: 6px 18px;
+  }
+  .runmeta b { color: var(--ink-2); font-weight: 500; }
+
+  .kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+  .kpi {
+    background: var(--surface); border: 1px solid var(--ring); border-radius: 6px;
+    padding: 14px 16px; display: grid; gap: 2px;
+  }
+  .kpi .label { font-size: 12px; color: var(--ink-2); }
+  .kpi .value { font-size: 30px; font-weight: 600; line-height: 1.1; letter-spacing: -0.02em; }
+  .kpi .note { font-size: 12px; color: var(--muted); font-family: var(--mono); }
+
+  .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+  .panel {
+    background: var(--surface); border: 1px solid var(--ring); border-radius: 6px;
+    padding: 16px 18px 14px; display: grid; gap: 10px; align-content: start; min-width: 0;
+  }
+  .panel.wide { grid-column: 1 / -1; }
+  .panel h2 { font-size: 15px; font-weight: 600; margin: 0; }
+  .panel .sub { margin: 0; color: var(--ink-2); font-size: 13px; max-width: 70ch; }
+  .panel .src { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+  .panel svg { width: 100%; height: auto; display: block; overflow: visible; }
+
+  svg text { font-family: var(--sans); font-size: 12px; fill: var(--ink-2); }
+  svg text.num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+  svg text.strong { fill: var(--ink); font-weight: 500; }
+  svg text.faint { fill: var(--muted); font-size: 11px; }
+  svg .grid-line { stroke: var(--grid); stroke-width: 1; }
+  svg .axis { stroke: var(--axis); stroke-width: 1; }
+  svg .bar { fill: var(--blue); }
+  svg .bar.branch { fill: var(--blue-soft); }
+  svg .bar.drop { fill: var(--orange); }
+  svg .bar.track { fill: var(--grid); }
+  svg .hit { fill: transparent; cursor: default; }
+  svg .hit:hover + .bar, svg .hit:hover ~ .mark { filter: brightness(0.9); }
+  svg .band { fill: var(--blue); opacity: 0.32; }
+  svg .band.drop { fill: var(--orange); opacity: 0.45; }
+  svg .band:hover { opacity: 0.7; }
+  svg .node { fill: var(--blue); }
+  svg .node.drop { fill: var(--orange); }
+  svg .node.end { fill: var(--seq-5); }
+  .panel-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+  .toggle { font-size: 12px; color: var(--ink-2); display: inline-flex; gap: 6px; align-items: center; cursor: pointer; }
+  .toggle input { accent-color: var(--blue); }
+  svg .frame { fill: var(--blue); stroke: var(--surface); stroke-width: 1; }
+  svg .frame.rt { fill: var(--axis); }
+  svg .frame:hover { filter: brightness(0.85); }
+  svg text.frame-label { font-family: var(--mono); font-size: 11px; pointer-events: none; }
+  svg .dumb-line { stroke: var(--blue-soft); stroke-width: 2; stroke-linecap: round; }
+  svg .dot { fill: var(--blue); stroke: var(--surface); stroke-width: 2; }
+  svg .dot.p95 { fill: var(--surface); stroke: var(--blue); stroke-width: 2; }
+  svg .cell-label { font-family: var(--mono); font-size: 12px; font-variant-numeric: tabular-nums; }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12px; color: var(--ink-2); }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; }
+  .legend i.ring { width: 8px; height: 8px; border-radius: 50%; background: var(--surface); border: 2px solid var(--blue); }
+  .legend i.dot { width: 10px; height: 10px; border-radius: 50%; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--grid); vertical-align: top; }
+  th { font-weight: 500; color: var(--ink-2); font-size: 12px; }
+  td.num, th.num { text-align: right; font-family: var(--mono); font-variant-numeric: tabular-nums; }
+  td.mono { font-family: var(--mono); font-size: 12px; }
+  .table-scroll { overflow-x: auto; }
+
+  #tip {
+    position: fixed; pointer-events: none; z-index: 10;
+    background: var(--ink); color: var(--page); padding: 6px 9px; border-radius: 4px;
+    font-size: 12px; font-family: var(--mono); white-space: pre; opacity: 0; transition: opacity .08s;
+  }
+  #tip.on { opacity: 1; }
+
+  @media (max-width: 760px) {
+    .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grid { grid-template-columns: 1fr; }
+  }
+  @media (prefers-reduced-motion: reduce) { #tip { transition: none; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Address pipeline — run report</h1>
+    <p>One <code>baml run run_eval</code> over the labelled address set. Every number below is a
+      <code>baml query</code> over the profile store; nothing was instrumented by hand beyond
+      <code>$id = traced()</code> on each service call.</p>
+    <div class="runmeta" id="runmeta"></div>
+  </header>
+
+  <section class="kpis" id="kpis"></section>
+
+  <div class="grid">
+    <section class="panel wide">
+      <h2>Where 1,000 addresses went</h2>
+      <p class="sub">The pipeline as traffic: band width is addresses, every fork is a decision in <code>process_address</code>.
+        Orange bands leave the pipeline. Hover a band for the count.</p>
+      <div id="flow"></div>
+      <div class="legend"><span><i style="background:var(--blue)"></i>continues</span><span><i style="background:var(--orange)"></i>dropped</span></div>
+      <span class="src">analytics/07_flow.sql</span>
+    </section>
+
+    <section class="panel wide">
+      <div class="panel-head">
+        <h2>Flame graph: where the time goes inside one address</h2>
+        <label class="toggle"><input type="checkbox" id="hide-runtime"> hide runtime frames</label>
+      </div>
+      <p class="sub">The call tree under <code>evaluate</code>, aggregated over every address in the run — width is
+        inclusive time. This is <code>call_path_stats</code>, which the profiler keeps for <em>every</em> function,
+        not just the traced ones, so the runtime's own frames (HTTP, JSON decoding) are here too.</p>
+      <div id="flame"></div>
+      <div class="legend"><span><i style="background:var(--blue)"></i>your functions</span><span><i style="background:var(--axis)"></i>BAML runtime / stdlib</span></div>
+      <span class="src">analytics/flame_call_tree.sql</span>
+    </section>
+
+    <section class="panel wide">
+      <h2>Coverage: addresses reaching each POST</h2>
+      <p class="sub">Every service call is its own traced function, so "how many made it here" is a row count.
+        Branch steps (fallback geocoder, per-type enrichment) are shown lighter.</p>
+      <div id="funnel"></div>
+      <div class="legend"><span><i style="background:var(--blue)"></i>pipeline step</span><span><i style="background:var(--blue-soft)"></i>branch</span></div>
+      <span class="src">analytics/01_funnel.sql</span>
+    </section>
+
+    <section class="panel">
+      <h2>Where addresses fell out</h2>
+      <p class="sub">The <code>Dropped</code> error each <code>process_address</code> span threw, grouped by stage.</p>
+      <div id="dropouts"></div>
+      <span class="src">analytics/02_dropouts.sql</span>
+    </section>
+
+    <section class="panel">
+      <h2>Accuracy by branch taken</h2>
+      <p class="sub">Scoring span joined to the parcel lookup underneath it via <code>parent_call_id</code>.
+        Zoning data is worth ~14 points.</p>
+      <div id="branch"></div>
+      <span class="src">analytics/04_accuracy_by_branch.sql</span>
+    </section>
+
+    <section class="panel">
+      <h2>Expected vs. predicted building type</h2>
+      <p class="sub">Confusion matrix over the addresses that completed. Shade is share of the row.</p>
+      <div id="confusion"></div>
+      <span class="src">analytics/03_accuracy.sql</span>
+    </section>
+
+    <section class="panel">
+      <h2>Latency per service</h2>
+      <p class="sub">p50 to p95 of each traced span's <code>duration_ns</code>, sorted by median.</p>
+      <div id="latency"></div>
+      <div class="legend"><span><i class="dot" style="background:var(--blue)"></i>p50</span><span><i class="ring"></i>p95</span></div>
+      <span class="src">analytics/05_latency.sql</span>
+    </section>
+
+    <section class="panel wide">
+      <h2>Review queue: lowest-confidence classifications</h2>
+      <p class="sub">Straight from the <code>classify_building</code> spans — the inputs the model saw and what it guessed.</p>
+      <div class="table-scroll" id="review"></div>
+      <span class="src">analytics/06_needs_review.sql</span>
+    </section>
+  </div>
+</div>
+<div id="tip"></div>
+
+<script>
+const DATA = __DATA__;
+
+// ---------------------------------------------------------------- helpers
+const NS = "http://www.w3.org/2000/svg";
+const el = (tag, attrs = {}, text) => {
+  const n = document.createElementNS(NS, tag);
+  for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, v);
+  if (text !== undefined) n.textContent = text;
+  return n;
+};
+const svg = (w, h) => el("svg", { viewBox: `0 0 ${w} ${h}`, width: w, height: h, role: "img" });
+const fmt = (n) => n.toLocaleString("en-US");
+const step = (fqn) => fqn.replace(/^user\./, "");
+const tip = document.getElementById("tip");
+function hover(node, text) {
+  node.addEventListener("mousemove", (e) => {
+    tip.textContent = text; tip.classList.add("on");
+    tip.style.left = (e.clientX + 14) + "px"; tip.style.top = (e.clientY + 14) + "px";
+  });
+  node.addEventListener("mouseleave", () => tip.classList.remove("on"));
+}
+
+// Horizontal bars with a hit area, value at the tip, optional secondary label.
+function hbars(rows, { width = 1040, labelW = 170, right = 120, barCls = () => "bar", max, tipText, valueText, noteText }) {
+  const rowH = 30, barH = 20, top = 6;
+  const h = top + rows.length * rowH + 6;
+  const s = svg(width, h);
+  const plotW = width - labelW - right;
+  const scale = (v) => plotW * v / max;
+  rows.forEach((r, i) => {
+    const y = top + i * rowH;
+    s.append(el("text", { x: labelW - 12, y: y + barH / 2 + 4, "text-anchor": "end", class: "strong" }, r.label));
+    const hit = el("rect", { x: labelW, y, width: plotW + right, height: rowH, class: "hit" });
+    const w = Math.max(scale(r.value), 0);
+    const p = el("path", { class: barCls(r), d: roundedRight(labelW, y + (rowH - barH) / 2, w, barH, 4) });
+    s.append(hit, p);
+    s.append(el("text", { x: labelW + w + 8, y: y + barH / 2 + 4, class: "num" }, valueText(r)));
+    if (noteText) s.append(el("text", { x: labelW + w + 8 + 70, y: y + barH / 2 + 4, class: "faint" }, noteText(r)));
+    hover(hit, tipText(r));
+  });
+  return s;
+}
+function roundedRight(x, y, w, h, r) {
+  r = Math.min(r, w);
+  return `M${x},${y} h${w - r} a${r},${r} 0 0 1 ${r},${r} v${h - 2 * r} a${r},${r} 0 0 1 -${r},${r} h-${w - r} z`;
+}
+
+// ---------------------------------------------------------------- run meta + KPIs
+{
+  const run = DATA.run;
+  const secs = (run.duration_ns / 1e9).toFixed(1);
+  document.getElementById("runmeta").innerHTML =
+    `<span>execution <b>…${run.execution_id.slice(14, 26)}</b></span>` +
+    `<span>started <b>${run.started_at.replace(/\.\d+Z$/, " UTC")}</b></span>` +
+    `<span>wall <b>${secs}s</b></span>` +
+    `<span>calls <b>${fmt(run.total_calls)}</b> · retained with values <b>${fmt(run.calls_retained)}</b></span>` +
+    `<span>threads <b>${fmt(run.threads_total)}</b></span>`;
+
+  const root = DATA.funnel.find((r) => r.step === "user.process_address");
+  const total = root.calls, completed = root.ok, dropped = root.errored;
+  const scored = DATA.accuracy.reduce((a, r) => ({ n: a.n + r.addresses, c: a.c + r.correct }), { n: 0, c: 0 });
+  const acc = (100 * scored.c / scored.n).toFixed(1);
+  const kpis = [
+    ["Addresses", fmt(total), "in data/addresses.csv"],
+    ["Completed", fmt(completed), `${(100 * completed / total).toFixed(1)}% coverage`],
+    ["Classification accuracy", `${acc}%`, `${fmt(scored.c)} of ${fmt(scored.n)} completed`],
+    ["Dropped", fmt(dropped), DATA.dropouts.map((d) => `${d.stage} ${d.addresses}`).join(" · ")],
+  ];
+  document.getElementById("kpis").innerHTML = kpis.map(([l, v, n]) =>
+    `<div class="kpi"><span class="label">${l}</span><span class="value">${v}</span><span class="note">${n}</span></div>`).join("");
+}
+
+
+// ---------------------------------------------------------------- flow (sankey)
+{
+  const e = Object.fromEntries(DATA.flow.map((r) => [r.edge, r.addresses]));
+  const total = DATA.funnel.find((r) => r.step === "user.process_address").calls;
+  // Columns are pipeline stages; a node's height is the addresses passing through it.
+  const nodes = {
+    addresses: { col: 0, label: "addresses" },
+    parse:     { col: 1, label: "parse" },
+    geocode:   { col: 2, label: "geocode" },
+    fallback:  { col: 3, label: "fallback geocoder" },
+    zoning:    { col: 4, label: "parcel found" },
+    noparcel:  { col: 4, label: "no parcel" },
+    classify:  { col: 5, label: "classify" },
+    res:       { col: 6, label: "enrich residential" },
+    com:       { col: 6, label: "enrich commercial" },
+    ind:       { col: 6, label: "enrich industrial" },
+    done:      { col: 7, label: "BuildingRecord", end: true },
+    d_parse:   { col: 2, label: "unparseable", drop: true },
+    d_geo:     { col: 4, label: "no geocode match", drop: true },
+    d_review:  { col: 6, label: "needs review", drop: true },
+  };
+  const links = [
+    ["addresses", "parse", total],
+    ["parse", "geocode", e.parsed], ["parse", "d_parse", e.unparseable],
+    ["geocode", "zoning", e.geocode_confident * e.parcel_found / (e.parcel_found + e.parcel_none)],
+    ["geocode", "noparcel", e.geocode_confident * e.parcel_none / (e.parcel_found + e.parcel_none)],
+    ["geocode", "fallback", e.geocode_low],
+    ["fallback", "zoning", e.fallback_matched * e.parcel_found / (e.parcel_found + e.parcel_none)],
+    ["fallback", "noparcel", e.fallback_matched * e.parcel_none / (e.parcel_found + e.parcel_none)],
+    ["fallback", "d_geo", e.fallback_none],
+    ["zoning", "classify", e.parcel_found], ["noparcel", "classify", e.parcel_none],
+    ["classify", "res", e.enrich_residential], ["classify", "com", e.enrich_commercial],
+    ["classify", "ind", e.enrich_industrial], ["classify", "d_review", e.classify_review],
+    ["res", "done", e.enrich_residential], ["com", "done", e.enrich_commercial], ["ind", "done", e.enrich_industrial],
+  ];
+  // The geocode→parcel split is estimated proportionally: the sankey can't carry
+  // identity across two forks, and the parcel outcome doesn't depend on the geocoder.
+
+  const W = 1040, H = 400, padTop = 24, padBottom = 16, nodeW = 10, colGap = 16;
+  const cols = 8, colX = (c) => 10 + c * ((W - 130 - 10) / (cols - 1));
+  const value = (id) => Math.max(
+    links.filter((l) => l[0] === id).reduce((a, l) => a + l[2], 0),
+    links.filter((l) => l[1] === id).reduce((a, l) => a + l[2], 0));
+  const scale = (H - padTop - padBottom - 3 * colGap) / total;
+  // Stack nodes within each column in declaration order; drops at the bottom.
+  for (let c = 0; c < cols; c++) {
+    const ids = Object.keys(nodes).filter((id) => nodes[id].col === c).sort((a, b) => (nodes[a].drop ? 1 : 0) - (nodes[b].drop ? 1 : 0));
+    const used = ids.reduce((a, id) => a + value(id) * scale, 0) + colGap * (ids.length - 1);
+    let y = padTop + (H - padTop - padBottom - used) / 2;
+    if (ids.some((id) => nodes[id].drop)) y = padTop;         // columns with a drop hang from the top
+    for (const id of ids) {
+      const n = nodes[id]; n.v = value(id); n.h = n.v * scale; n.x = colX(c);
+      n.y = n.drop ? H - padBottom - n.h - (id === "d_geo" ? 0 : 0) : y;
+      if (!n.drop) y += n.h + colGap;
+      n.outY = n.y; n.inY = n.y;
+    }
+  }
+  const s = svg(W, H);
+  const bands = el("g"), boxes = el("g"), labels = el("g");
+  for (const [a, b, v] of links) {
+    const A = nodes[a], B = nodes[b], h = v * scale;
+    const x0 = A.x + nodeW, x1 = B.x, y0 = A.outY, y1 = B.inY;
+    A.outY += h; B.inY += h;
+    const cx = (x0 + x1) / 2;
+    const d = `M${x0},${y0} C${cx},${y0} ${cx},${y1} ${x1},${y1} v${h} C${cx},${y1 + h} ${cx},${y0 + h} ${x0},${y0 + h} z`;
+    const p = el("path", { d, class: B.drop ? "band drop" : "band" });
+    hover(p, `${A.label} → ${B.label}\n${fmt(Math.round(v))} addresses (${(100 * v / total).toFixed(1)}%)`);
+    bands.append(p);
+  }
+  for (const [id, n] of Object.entries(nodes)) {
+    boxes.append(el("rect", { x: n.x, y: n.y, width: nodeW, height: Math.max(n.h, 2), rx: 2,
+      class: n.drop ? "node drop" : n.end ? "node end" : "node" }));
+    const right = true;
+    const lx = right ? n.x + nodeW + 8 : n.x - 8, anchor = right ? "start" : "end";
+    labels.append(el("text", { x: lx, y: n.y + Math.min(n.h / 2, 14) + 4, "text-anchor": anchor, class: "strong" }, n.label));
+    labels.append(el("text", { x: lx, y: n.y + Math.min(n.h / 2, 14) + 18, "text-anchor": anchor, class: "num faint" },
+      `${fmt(Math.round(n.v))} · ${(100 * n.v / total).toFixed(1)}%`));
+  }
+  s.append(bands, boxes, labels);
+  document.getElementById("flow").append(s);
+}
+
+
+// ---------------------------------------------------------------- flame graph
+{
+  const rows = DATA.call_tree;
+  const byId = Object.fromEntries(rows.map((r) => [r.call_path_id, { ...r, children: [] }]));
+  for (const n of Object.values(byId)) if (n.parent_call_path_id && byId[n.parent_call_path_id]) byId[n.parent_call_path_id].children.push(n);
+  const isUser = (n) => n.origin === "user";
+
+  // Merge every `evaluate` path into one tree, keyed by fqn at each level.
+  function merge(list) {
+    const out = new Map();
+    for (const n of list) {
+      const m = out.get(n.fqn) ?? { fqn: n.fqn, origin: n.origin, calls: 0, incl: 0, self: 0, kids: [] };
+      m.calls += n.calls_started; m.incl += n.inclusive_ns; m.self += n.self_ns; m.kids.push(...n.children);
+      out.set(n.fqn, m);
+    }
+    return [...out.values()].map((m) => ({ ...m, children: merge(m.kids) })).sort((a, b) => b.incl - a.incl);
+  }
+  // Optionally splice out runtime frames so a user frame's children are the next user frames below it.
+  function userOnly(n) {
+    const lift = (kids) => kids.flatMap((k) => isUser(k) ? [userOnly(k)] : lift(k.children));
+    return { ...n, children: lift(n.children) };
+  }
+  const roots = merge(rows.filter((r) => r.fqn === "user.evaluate").map((r) => byId[r.call_path_id]));
+  const root = roots[0];
+
+  function render(hideRuntime) {
+    const tree = hideRuntime ? userOnly(root) : root;
+    const W = 1040, rowH = 22, depthOf = (n) => 1 + Math.max(0, ...n.children.map(depthOf));
+    const H = depthOf(tree) * rowH + 24;
+    const s = svg(W, H);
+    const perCall = (ns, calls) => (ns / 1e6 / calls).toFixed(2);
+    function draw(n, x, y, w) {
+      if (w < 0.5) return;
+      const rt = !isUser(n);
+      const r = el("rect", { x, y, width: w, height: rowH - 1, rx: 2, class: rt ? "frame rt" : "frame" });
+      hover(r, `${n.fqn}\ncalls     ${fmt(n.calls)}\ninclusive ${perCall(n.incl, n.calls)} ms/call  (${(100 * n.incl / tree.incl).toFixed(1)}% of evaluate)\nself      ${perCall(n.self, n.calls)} ms/call`);
+      s.append(r);
+      if (w > 48) {
+        const label = n.fqn.replace(/^user\./, "").replace(/^baml\./, "");
+        const maxChars = Math.floor((w - 8) / 6.6);
+        s.append(el("text", { x: x + 5, y: y + 15, class: "frame-label",
+          style: `fill:${rt ? "var(--ink-2)" : "var(--surface)"}` }, label.length > maxChars ? label.slice(0, Math.max(0, maxChars - 1)) + "…" : label));
+      }
+      let cx = x;
+      const scale = w / Math.max(n.incl, n.children.reduce((a, c) => a + c.incl, 0));
+      for (const c of n.children) { const cw = c.incl * scale; draw(c, cx, y + rowH, cw); cx += cw; }
+    }
+    draw(tree, 0, 0, W);
+    s.append(el("text", { x: 0, y: H - 4, class: "faint" }, `← ${perCall(tree.incl, tree.calls)} ms per address, ${fmt(tree.calls)} addresses →`));
+    const host = document.getElementById("flame"); host.innerHTML = ""; host.append(s);
+  }
+  const box = document.getElementById("hide-runtime");
+  box.addEventListener("change", () => render(box.checked));
+  render(false);
+}
+
+// ---------------------------------------------------------------- funnel
+{
+  const order = [
+    ["parse_address", false], ["geocode", false], ["geocode_fallback", true], ["lookup_parcel", false],
+    ["classify_building", false], ["enrich_residential", true], ["enrich_commercial", true], ["enrich_industrial", true],
+  ];
+  const byStep = Object.fromEntries(DATA.funnel.map((r) => [step(r.step), r]));
+  const total = byStep.process_address.calls;
+  const rows = order.filter(([k]) => byStep[k]).map(([k, branch]) => ({
+    label: (branch ? "↳ " : "") + k, value: byStep[k].calls, branch, r: byStep[k],
+  }));
+  document.getElementById("funnel").append(hbars(rows, {
+    max: total, right: 330,
+    barCls: (r) => r.branch ? "bar branch" : "bar",
+    valueText: (r) => `${fmt(r.value)}`,
+    noteText: (r) => `${r.r.pct_of_addresses}% of addresses · ${r.r.avg_ms} ms avg`,
+    tipText: (r) => `${r.label.replace("↳ ", "")}\ncalls   ${r.r.calls}\nok      ${r.r.ok}\nerrored ${r.r.errored}\navg     ${r.r.avg_ms} ms`,
+  }));
+}
+
+// ---------------------------------------------------------------- dropouts
+{
+  const rows = DATA.dropouts.map((d) => ({ label: d.stage, value: d.addresses, d }));
+  const max = Math.max(...rows.map((r) => r.value)) * 1.15;
+  document.getElementById("dropouts").append(hbars(rows, {
+    width: 500, labelW: 90, max,
+    barCls: () => "bar drop",
+    valueText: (r) => fmt(r.value),
+    tipText: (r) => `${r.d.stage}: ${r.d.addresses} addresses\ne.g. ${r.d.example_address}\n${r.d.example_reason}`,
+  }));
+  const ul = document.createElement("div");
+  ul.className = "sub";
+  ul.innerHTML = DATA.dropouts.map((d) =>
+    `<div><b>${d.stage}</b> — <span class="mono" style="font-family:var(--mono);font-size:12px">${d.example_reason}</span></div>`).join("");
+  document.getElementById("dropouts").append(ul);
+}
+
+// ---------------------------------------------------------------- accuracy by branch
+{
+  const rows = DATA.accuracy_by_branch.map((b) => ({ label: b.branch, value: b.accuracy_pct, b }));
+  document.getElementById("branch").append(hbars(rows, {
+    width: 500, labelW: 210, max: 100,
+    valueText: (r) => `${r.value}%`,
+    noteText: (r) => `n=${r.b.addresses}`,
+    tipText: (r) => `${r.b.branch}\naccuracy ${r.b.accuracy_pct}%\naddresses ${r.b.addresses}`,
+  }));
+}
+
+// ---------------------------------------------------------------- confusion matrix
+{
+  const types = ["Residential", "Commercial", "Industrial", "MixedUse"];
+  const cols = { Residential: "as_residential", Commercial: "as_commercial", Industrial: "as_industrial", MixedUse: "as_mixed_use" };
+  const byType = Object.fromEntries(DATA.accuracy.map((r) => [r.expected, r]));
+  const cell = 74, left = 110, top = 34, gap = 2;
+  const w = left + types.length * cell + 90, h = top + types.length * cell + 4;
+  const s = svg(w, h);
+  s.append(el("text", { x: left + types.length * cell / 2, y: 12, "text-anchor": "middle", class: "faint" }, "predicted →"));
+  types.forEach((t, j) => s.append(el("text", { x: left + j * cell + cell / 2, y: 28, "text-anchor": "middle" }, t)));
+  s.append(el("text", { x: 8, y: top + types.length * cell / 2, class: "faint", transform: `rotate(-90 8 ${top + types.length * cell / 2})`, "text-anchor": "middle" }, "expected"));
+  const ramp = ["--seq-1", "--seq-2", "--seq-3", "--seq-4", "--seq-5"];
+  types.forEach((t, i) => {
+    const row = byType[t]; if (!row) return;
+    const y = top + i * cell;
+    s.append(el("text", { x: left - 10, y: y + cell / 2 + 4, "text-anchor": "end", class: "strong" }, t));
+    types.forEach((p, j) => {
+      const v = row[cols[p]], share = v / row.addresses;
+      const k = v === 0 ? -1 : Math.min(4, Math.floor(share * 5));
+      const x = left + j * cell;
+      const r = el("rect", { x: x + gap / 2, y: y + gap / 2, width: cell - gap, height: cell - gap, rx: 3,
+        fill: k < 0 ? "var(--grid)" : `var(${ramp[k]})` });
+      hover(r, `expected ${t}\npredicted ${p}\n${v} addresses (${(100 * share).toFixed(1)}%)`);
+      s.append(r);
+      const dark = k >= 3;
+      s.append(el("text", { x: x + cell / 2, y: y + cell / 2 + 4, "text-anchor": "middle", class: "cell-label",
+        style: `pointer-events:none; fill:${dark ? "var(--surface)" : "var(--ink)"}` }, v));
+    });
+    s.append(el("text", { x: left + types.length * cell + 12, y: y + cell / 2 + 4, class: "num" }, `${row.accuracy_pct}%`));
+    s.append(el("text", { x: left + types.length * cell + 12, y: y + cell / 2 + 18, class: "faint" }, `n=${row.addresses}`));
+  });
+  document.getElementById("confusion").append(s);
+}
+
+// ---------------------------------------------------------------- latency dumbbells
+{
+  const rows = DATA.latency.filter((r) => r.step !== "user.process_address");
+  const width = 500, labelW = 150, right = 20, rowH = 30, top = 10;
+  const h = top + rows.length * rowH + 28;
+  const s = svg(width, h);
+  const plotW = width - labelW - right;
+  const max = Math.ceil(Math.max(...rows.map((r) => r.p95_ms)) / 20) * 20;
+  const x = (v) => labelW + plotW * v / max;
+  for (let t = 0; t <= max; t += 20) {
+    s.append(el("line", { x1: x(t), x2: x(t), y1: top, y2: top + rows.length * rowH, class: "grid-line" }));
+    s.append(el("text", { x: x(t), y: h - 6, "text-anchor": "middle", class: "num faint" }, `${t} ms`));
+  }
+  rows.forEach((r, i) => {
+    const y = top + i * rowH + rowH / 2;
+    s.append(el("text", { x: labelW - 12, y: y + 4, "text-anchor": "end", class: "strong" }, step(r.step)));
+    const hit = el("rect", { x: labelW, y: y - rowH / 2, width: plotW, height: rowH, class: "hit" });
+    hover(hit, `${step(r.step)}\np50 ${r.p50_ms} ms\np95 ${r.p95_ms} ms\nmax ${r.max_ms} ms\ncalls ${r.calls}`);
+    s.append(hit);
+    s.append(el("line", { x1: x(r.p50_ms), x2: x(r.p95_ms), y1: y, y2: y, class: "dumb-line" }));
+    s.append(el("circle", { cx: x(r.p95_ms), cy: y, r: 5, class: "dot p95" }));
+    s.append(el("circle", { cx: x(r.p50_ms), cy: y, r: 5, class: "dot" }));
+  });
+  document.getElementById("latency").append(s);
+}
+
+// ---------------------------------------------------------------- review table
+{
+  const rows = DATA.needs_review;
+  document.getElementById("review").innerHTML = `<table>
+    <thead><tr><th>address</th><th>zoning code</th><th>guessed</th><th class="num">confidence</th></tr></thead>
+    <tbody>${rows.map((r) => `<tr><td class="mono">${r.address}</td><td class="mono">${r.zoning_code ?? "—"}</td><td>${r.guessed}</td><td class="num">${Number(r.confidence).toFixed(2)}</td></tr>`).join("")}</tbody>
+  </table>`;
+}
+</script>

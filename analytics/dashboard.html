@@ -1,0 +1,4925 @@
+<title>Address Pipeline Run Report</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    color-scheme: light;
+    --page: #f6f6f3;
+    --surface: #fcfcfb;
+    --ink: #0b0b0b;
+    --ink-2: #52514e;
+    --muted: #898781;
+    --grid: #e1e0d9;
+    --axis: #c3c2b7;
+    --ring: rgba(11, 11, 11, 0.10);
+    --blue: #2a78d6;
+    --blue-soft: #86b6ef;
+    --orange: #eb6834;
+    --seq-1: #cde2fb; --seq-2: #9ec5f4; --seq-3: #5598e7; --seq-4: #256abf; --seq-5: #104281;
+    --good-text: #006300;
+    --sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --page: #0d0d0d;
+      --surface: #1a1a19;
+      --ink: #ffffff;
+      --ink-2: #c3c2b7;
+      --muted: #898781;
+      --grid: #2c2c2a;
+      --axis: #383835;
+      --ring: rgba(255, 255, 255, 0.10);
+      --blue: #3987e5;
+      --blue-soft: #1c5cab;
+      --orange: #d95926;
+      --seq-1: #184f95; --seq-2: #1c5cab; --seq-3: #2a78d6; --seq-4: #5598e7; --seq-5: #9ec5f4;
+      --good-text: #0ca30c;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --page: #0d0d0d;
+    --surface: #1a1a19;
+    --ink: #ffffff;
+    --ink-2: #c3c2b7;
+    --muted: #898781;
+    --grid: #2c2c2a;
+    --axis: #383835;
+    --ring: rgba(255, 255, 255, 0.10);
+    --blue: #3987e5;
+    --blue-soft: #1c5cab;
+    --orange: #d95926;
+    --seq-1: #184f95; --seq-2: #1c5cab; --seq-3: #2a78d6; --seq-4: #5598e7; --seq-5: #9ec5f4;
+    --good-text: #0ca30c;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--page);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 14px;
+    line-height: 1.45;
+    padding-block: 32px 64px;
+    padding-inline: 20px;
+  }
+  .wrap { max-width: 1120px; margin-inline: auto; display: grid; gap: 20px; }
+
+  header { display: grid; gap: 6px; padding-bottom: 8px; }
+  header h1 { font-size: 22px; font-weight: 600; margin: 0; letter-spacing: -0.01em; text-wrap: balance; }
+  header p { margin: 0; color: var(--ink-2); max-width: 65ch; }
+  .runmeta {
+    font-family: var(--mono); font-size: 12px; color: var(--muted);
+    display: flex; flex-wrap: wrap; gap: 6px 18px;
+  }
+  .runmeta b { color: var(--ink-2); font-weight: 500; }
+
+  .kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+  .kpi {
+    background: var(--surface); border: 1px solid var(--ring); border-radius: 6px;
+    padding: 14px 16px; display: grid; gap: 2px;
+  }
+  .kpi .label { font-size: 12px; color: var(--ink-2); }
+  .kpi .value { font-size: 30px; font-weight: 600; line-height: 1.1; letter-spacing: -0.02em; }
+  .kpi .note { font-size: 12px; color: var(--muted); font-family: var(--mono); }
+
+  .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+  .panel {
+    background: var(--surface); border: 1px solid var(--ring); border-radius: 6px;
+    padding: 16px 18px 14px; display: grid; gap: 10px; align-content: start; min-width: 0;
+  }
+  .panel.wide { grid-column: 1 / -1; }
+  .panel h2 { font-size: 15px; font-weight: 600; margin: 0; }
+  .panel .sub { margin: 0; color: var(--ink-2); font-size: 13px; max-width: 70ch; }
+  .panel .src { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+  .panel svg { width: 100%; height: auto; display: block; overflow: visible; }
+
+  svg text { font-family: var(--sans); font-size: 12px; fill: var(--ink-2); }
+  svg text.num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+  svg text.strong { fill: var(--ink); font-weight: 500; }
+  svg text.faint { fill: var(--muted); font-size: 11px; }
+  svg .grid-line { stroke: var(--grid); stroke-width: 1; }
+  svg .axis { stroke: var(--axis); stroke-width: 1; }
+  svg .bar { fill: var(--blue); }
+  svg .bar.branch { fill: var(--blue-soft); }
+  svg .bar.drop { fill: var(--orange); }
+  svg .bar.track { fill: var(--grid); }
+  svg .hit { fill: transparent; cursor: default; }
+  svg .hit:hover + .bar, svg .hit:hover ~ .mark { filter: brightness(0.9); }
+  svg .band { fill: var(--blue); opacity: 0.32; }
+  svg .band.drop { fill: var(--orange); opacity: 0.45; }
+  svg .band:hover { opacity: 0.7; }
+  svg .node { fill: var(--blue); }
+  svg .node.drop { fill: var(--orange); }
+  svg .node.end { fill: var(--seq-5); }
+  .panel-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+  .toggle { font-size: 12px; color: var(--ink-2); display: inline-flex; gap: 6px; align-items: center; cursor: pointer; }
+  .toggle input { accent-color: var(--blue); }
+  svg .frame { fill: var(--blue); stroke: var(--surface); stroke-width: 1; }
+  svg .frame.rt { fill: var(--axis); }
+  svg .frame:hover { filter: brightness(0.85); }
+  svg text.frame-label { font-family: var(--mono); font-size: 11px; pointer-events: none; }
+  svg .dumb-line { stroke: var(--blue-soft); stroke-width: 2; stroke-linecap: round; }
+  svg .dot { fill: var(--blue); stroke: var(--surface); stroke-width: 2; }
+  svg .dot.p95 { fill: var(--surface); stroke: var(--blue); stroke-width: 2; }
+  svg .cell-label { font-family: var(--mono); font-size: 12px; font-variant-numeric: tabular-nums; }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12px; color: var(--ink-2); }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; }
+  .legend i.ring { width: 8px; height: 8px; border-radius: 50%; background: var(--surface); border: 2px solid var(--blue); }
+  .legend i.dot { width: 10px; height: 10px; border-radius: 50%; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--grid); vertical-align: top; }
+  th { font-weight: 500; color: var(--ink-2); font-size: 12px; }
+  td.num, th.num { text-align: right; font-family: var(--mono); font-variant-numeric: tabular-nums; }
+  td.mono { font-family: var(--mono); font-size: 12px; }
+  .table-scroll { overflow-x: auto; }
+
+  #tip {
+    position: fixed; pointer-events: none; z-index: 10;
+    background: var(--ink); color: var(--page); padding: 6px 9px; border-radius: 4px;
+    font-size: 12px; font-family: var(--mono); white-space: pre; opacity: 0; transition: opacity .08s;
+  }
+  #tip.on { opacity: 1; }
+
+  @media (max-width: 760px) {
+    .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grid { grid-template-columns: 1fr; }
+  }
+  @media (prefers-reduced-motion: reduce) { #tip { transition: none; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Address pipeline — run report</h1>
+    <p>One <code>baml run run_eval</code> over the labelled address set. Every number below is a
+      <code>baml query</code> over the profile store; nothing was instrumented by hand beyond
+      <code>$id = traced()</code> on each service call.</p>
+    <div class="runmeta" id="runmeta"></div>
+  </header>
+
+  <section class="kpis" id="kpis"></section>
+
+  <div class="grid">
+    <section class="panel wide">
+      <h2>Where 1,000 addresses went</h2>
+      <p class="sub">The pipeline as traffic: band width is addresses, every fork is a decision in <code>process_address</code>.
+        Orange bands leave the pipeline. Hover a band for the count.</p>
+      <div id="flow"></div>
+      <div class="legend"><span><i style="background:var(--blue)"></i>continues</span><span><i style="background:var(--orange)"></i>dropped</span></div>
+      <span class="src">analytics/07_flow.sql</span>
+    </section>
+
+    <section class="panel wide">
+      <div class="panel-head">
+        <h2>Flame graph: where the time goes inside one address</h2>
+        <label class="toggle"><input type="checkbox" id="hide-runtime"> hide runtime frames</label>
+      </div>
+      <p class="sub">The call tree under <code>evaluate</code>, aggregated over every address in the run — width is
+        inclusive time. This is <code>call_path_stats</code>, which the profiler keeps for <em>every</em> function,
+        not just the traced ones, so the runtime's own frames (HTTP, JSON decoding) are here too.</p>
+      <div id="flame"></div>
+      <div class="legend"><span><i style="background:var(--blue)"></i>your functions</span><span><i style="background:var(--axis)"></i>BAML runtime / stdlib</span></div>
+      <span class="src">analytics/flame_call_tree.sql</span>
+    </section>
+
+    <section class="panel wide">
+      <h2>Coverage: addresses reaching each POST</h2>
+      <p class="sub">Every service call is its own traced function, so "how many made it here" is a row count.
+        Branch steps (fallback geocoder, per-type enrichment) are shown lighter.</p>
+      <div id="funnel"></div>
+      <div class="legend"><span><i style="background:var(--blue)"></i>pipeline step</span><span><i style="background:var(--blue-soft)"></i>branch</span></div>
+      <span class="src">analytics/01_funnel.sql</span>
+    </section>
+
+    <section class="panel">
+      <h2>Where addresses fell out</h2>
+      <p class="sub">The <code>Dropped</code> error each <code>process_address</code> span threw, grouped by stage.</p>
+      <div id="dropouts"></div>
+      <span class="src">analytics/02_dropouts.sql</span>
+    </section>
+
+    <section class="panel">
+      <h2>Accuracy by branch taken</h2>
+      <p class="sub">Scoring span joined to the parcel lookup underneath it via <code>parent_call_id</code>.
+        Zoning data is worth ~14 points.</p>
+      <div id="branch"></div>
+      <span class="src">analytics/04_accuracy_by_branch.sql</span>
+    </section>
+
+    <section class="panel">
+      <h2>Expected vs. predicted building type</h2>
+      <p class="sub">Confusion matrix over the addresses that completed. Shade is share of the row.</p>
+      <div id="confusion"></div>
+      <span class="src">analytics/03_accuracy.sql</span>
+    </section>
+
+    <section class="panel">
+      <h2>Latency per service</h2>
+      <p class="sub">p50 to p95 of each traced span's <code>duration_ns</code>, sorted by median.</p>
+      <div id="latency"></div>
+      <div class="legend"><span><i class="dot" style="background:var(--blue)"></i>p50</span><span><i class="ring"></i>p95</span></div>
+      <span class="src">analytics/05_latency.sql</span>
+    </section>
+
+    <section class="panel wide">
+      <h2>Review queue: lowest-confidence classifications</h2>
+      <p class="sub">Straight from the <code>classify_building</code> spans — the inputs the model saw and what it guessed.</p>
+      <div class="table-scroll" id="review"></div>
+      <span class="src">analytics/06_needs_review.sql</span>
+    </section>
+  </div>
+</div>
+<div id="tip"></div>
+
+<script>
+const DATA = {
+ "run": {
+  "execution_id": "baml_thread_1_AQGgj4epNnrVm1i9FgvainoAAAAAAAAAAQAAAAAAAAAB",
+  "started_at": "2026-09-11 08:13:47.764345666Z",
+  "duration_ns": 14747376417,
+  "total_calls": 122100,
+  "calls_retained": 6862,
+  "threads_total": 1002
+ },
+ "funnel": [
+  {
+   "step": "user.process_address",
+   "calls": 1000,
+   "ok": 889,
+   "errored": 111,
+   "pct_of_addresses": 100.0,
+   "avg_ms": 117.5
+  },
+  {
+   "step": "user.parse_address",
+   "calls": 1000,
+   "ok": 1000,
+   "errored": 0,
+   "pct_of_addresses": 100.0,
+   "avg_ms": 7.4
+  },
+  {
+   "step": "user.geocode",
+   "calls": 962,
+   "ok": 962,
+   "errored": 0,
+   "pct_of_addresses": 96.2,
+   "avg_ms": 44.7
+  },
+  {
+   "step": "user.lookup_parcel",
+   "calls": 929,
+   "ok": 929,
+   "errored": 0,
+   "pct_of_addresses": 92.9,
+   "avg_ms": 29.8
+  },
+  {
+   "step": "user.classify_building",
+   "calls": 929,
+   "ok": 929,
+   "errored": 0,
+   "pct_of_addresses": 92.9,
+   "avg_ms": 19.1
+  },
+  {
+   "step": "user.enrich_residential",
+   "calls": 443,
+   "ok": 443,
+   "errored": 0,
+   "pct_of_addresses": 44.3,
+   "avg_ms": 13.1
+  },
+  {
+   "step": "user.enrich_commercial",
+   "calls": 334,
+   "ok": 334,
+   "errored": 0,
+   "pct_of_addresses": 33.4,
+   "avg_ms": 13.2
+  },
+  {
+   "step": "user.geocode_fallback",
+   "calls": 152,
+   "ok": 152,
+   "errored": 0,
+   "pct_of_addresses": 15.2,
+   "avg_ms": 64.8
+  },
+  {
+   "step": "user.enrich_industrial",
+   "calls": 112,
+   "ok": 112,
+   "errored": 0,
+   "pct_of_addresses": 11.2,
+   "avg_ms": 13.1
+  }
+ ],
+ "dropouts": [
+  {
+   "stage": "Classify",
+   "addresses": 40,
+   "example_address": "9938 Aspen Dr, Fairview, TN 37062",
+   "example_reason": "confidence 0.49 is below 0.5, needs review"
+  },
+  {
+   "stage": "Parse",
+   "addresses": 38,
+   "example_address": "Willow Ct",
+   "example_reason": "address could not be parsed"
+  },
+  {
+   "stage": "Geocode",
+   "addresses": 33,
+   "example_address": "9795 Maple Ln, Bayside, CA 94110",
+   "example_reason": "primary confidence 0.64, fallback had no match"
+  }
+ ],
+ "accuracy": [
+  {
+   "expected": "Residential",
+   "addresses": 464,
+   "correct": 436,
+   "accuracy_pct": 94.0,
+   "as_residential": 436,
+   "as_commercial": 11,
+   "as_industrial": 11,
+   "as_mixed_use": 6
+  },
+  {
+   "expected": "Commercial",
+   "addresses": 254,
+   "correct": 237,
+   "accuracy_pct": 93.3,
+   "as_residential": 4,
+   "as_commercial": 237,
+   "as_industrial": 9,
+   "as_mixed_use": 4
+  },
+  {
+   "expected": "Industrial",
+   "addresses": 91,
+   "correct": 88,
+   "accuracy_pct": 96.7,
+   "as_residential": 0,
+   "as_commercial": 1,
+   "as_industrial": 88,
+   "as_mixed_use": 2
+  },
+  {
+   "expected": "MixedUse",
+   "addresses": 80,
+   "correct": 66,
+   "accuracy_pct": 82.5,
+   "as_residential": 3,
+   "as_commercial": 7,
+   "as_industrial": 4,
+   "as_mixed_use": 66
+  }
+ ],
+ "accuracy_by_branch": [
+  {
+   "branch": "zoning from parcel",
+   "addresses": 808,
+   "accuracy_pct": 94.3
+  },
+  {
+   "branch": "no parcel: address heuristics",
+   "addresses": 81,
+   "accuracy_pct": 80.2
+  }
+ ],
+ "latency": [
+  {
+   "step": "user.process_address",
+   "calls": 1000,
+   "p50_ms": 114.2,
+   "p95_ms": 179.4,
+   "max_ms": 227.9
+  },
+  {
+   "step": "user.geocode_fallback",
+   "calls": 152,
+   "p50_ms": 65.1,
+   "p95_ms": 67.1,
+   "max_ms": 75.5
+  },
+  {
+   "step": "user.geocode",
+   "calls": 962,
+   "p50_ms": 45.0,
+   "p95_ms": 47.2,
+   "max_ms": 56.3
+  },
+  {
+   "step": "user.lookup_parcel",
+   "calls": 929,
+   "p50_ms": 30.0,
+   "p95_ms": 32.7,
+   "max_ms": 43.0
+  },
+  {
+   "step": "user.classify_building",
+   "calls": 929,
+   "p50_ms": 19.3,
+   "p95_ms": 21.6,
+   "max_ms": 30.1
+  },
+  {
+   "step": "user.enrich_industrial",
+   "calls": 112,
+   "p50_ms": 13.2,
+   "p95_ms": 14.5,
+   "max_ms": 23.2
+  },
+  {
+   "step": "user.enrich_residential",
+   "calls": 443,
+   "p50_ms": 13.2,
+   "p95_ms": 15.0,
+   "max_ms": 19.5
+  },
+  {
+   "step": "user.enrich_commercial",
+   "calls": 334,
+   "p50_ms": 13.2,
+   "p95_ms": 15.2,
+   "max_ms": 21.4
+  },
+  {
+   "step": "user.parse_address",
+   "calls": 1000,
+   "p50_ms": 7.0,
+   "p95_ms": 8.9,
+   "max_ms": 57.7
+  }
+ ],
+ "needs_review": [
+  {
+   "address": "8596 Elm Cir, Hillcrest, CA 92103",
+   "zoning_code": null,
+   "guessed": "Residential",
+   "confidence": "0.35"
+  },
+  {
+   "address": "9663 Cedar Ter, Bayside, CA 94110",
+   "zoning_code": null,
+   "guessed": "Residential",
+   "confidence": "0.36"
+  },
+  {
+   "address": "4409 Retail Row, Riverton, UT 84065",
+   "zoning_code": null,
+   "guessed": "Commercial",
+   "confidence": "0.36"
+  },
+  {
+   "address": "6053 Willow Ct, Bayside, CA 94110",
+   "zoning_code": null,
+   "guessed": "Residential",
+   "confidence": "0.36"
+  },
+  {
+   "address": "5346 Aspen Dr, Bayside, CA 94110",
+   "zoning_code": null,
+   "guessed": "Residential",
+   "confidence": "0.37"
+  },
+  {
+   "address": "698 Industrial Pkwy, Hillcrest, CA 92103",
+   "zoning_code": null,
+   "guessed": "Commercial",
+   "confidence": "0.38"
+  },
+  {
+   "address": "1592 Willow Ct, Riverton, UT 84065",
+   "zoning_code": null,
+   "guessed": "Residential",
+   "confidence": "0.38"
+  },
+  {
+   "address": "1123 Aspen Dr, Riverton, UT 84065",
+   "zoning_code": null,
+   "guessed": "Commercial",
+   "confidence": "0.38"
+  },
+  {
+   "address": "7010 Birch Pl, Springfield, IL 62701",
+   "zoning_code": null,
+   "guessed": "Residential",
+   "confidence": "0.38"
+  },
+  {
+   "address": "4843 Commerce Blvd, Bayside, CA 94110",
+   "zoning_code": null,
+   "guessed": "Commercial",
+   "confidence": "0.39"
+  }
+ ],
+ "flow": [
+  {
+   "edge": "geocode_confident",
+   "addresses": 810
+  },
+  {
+   "edge": "unparseable",
+   "addresses": 38
+  },
+  {
+   "edge": "parsed",
+   "addresses": 962
+  },
+  {
+   "edge": "parcel_found",
+   "addresses": 808
+  },
+  {
+   "edge": "fallback_none",
+   "addresses": 33
+  },
+  {
+   "edge": "enrich_industrial",
+   "addresses": 112
+  },
+  {
+   "edge": "enrich_residential",
+   "addresses": 443
+  },
+  {
+   "edge": "fallback_matched",
+   "addresses": 119
+  },
+  {
+   "edge": "geocode_low",
+   "addresses": 152
+  },
+  {
+   "edge": "classify_review",
+   "addresses": 40
+  },
+  {
+   "edge": "classify_confident",
+   "addresses": 889
+  },
+  {
+   "edge": "parcel_none",
+   "addresses": 121
+  },
+  {
+   "edge": "enrich_commercial",
+   "addresses": 334
+  }
+ ],
+ "call_tree": [
+  {
+   "call_path_id": "fbabe0ade39f7f21c42038e17042bfda8898ae789632707f82e0d5602fb11581",
+   "parent_call_path_id": null,
+   "depth": 0,
+   "fqn": "user.run_eval",
+   "origin": "user",
+   "kind": "bytecode",
+   "edge_kind": "root",
+   "calls_started": 1,
+   "inclusive_ns": 14747376417,
+   "self_ns": 197401,
+   "await_ns": 14733036500
+  },
+  {
+   "call_path_id": "63156a55438e291613d14708db6fe6286968cf5962f257b215ef66d03611dede",
+   "parent_call_path_id": "fbabe0ade39f7f21c42038e17042bfda8898ae789632707f82e0d5602fb11581",
+   "depth": 1,
+   "fqn": ".<lambda(run_eval, 0)>",
+   "origin": "internal",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 999,
+   "inclusive_ns": 7346892,
+   "self_ns": 4946248,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "437a7eeb82fcc49e2d2aa450462135c5e0d8ecd43b67d378e05c8d3ee0688bef",
+   "parent_call_path_id": "fbabe0ade39f7f21c42038e17042bfda8898ae789632707f82e0d5602fb11581",
+   "depth": 1,
+   "fqn": "user.summarize",
+   "origin": "user",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 3666041,
+   "self_ns": 1222306,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "e3e2ffab493a476fdf0d25d3fbc1fb6522cafeda43d39a32eb0d6b447201b466",
+   "parent_call_path_id": "fbabe0ade39f7f21c42038e17042bfda8898ae789632707f82e0d5602fb11581",
+   "depth": 1,
+   "fqn": "baml.csv.decode",
+   "origin": "builtin",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 2992542,
+   "self_ns": 13917,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "2fe57f3ca59bd91ffdfc7f909b62130b9d0c3e5639a6fb581e404637f5f6950e",
+   "parent_call_path_id": "fbabe0ade39f7f21c42038e17042bfda8898ae789632707f82e0d5602fb11581",
+   "depth": 1,
+   "fqn": "baml.fs.read",
+   "origin": "builtin",
+   "kind": "sysop",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 100958,
+   "self_ns": 25291,
+   "await_ns": 75667
+  },
+  {
+   "call_path_id": "a66b7c3f68f3c7f3b265c18796a521f8ef6bb95a432f14bc0568101e5ae4e3ba",
+   "parent_call_path_id": "fbabe0ade39f7f21c42038e17042bfda8898ae789632707f82e0d5602fb11581",
+   "depth": 1,
+   "fqn": ".<lambda(run_eval, 0)>",
+   "origin": "internal",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 23167,
+   "self_ns": 20208,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "347c0c857904aa46c79173fe81dace39d72993f032f052f0bacb8cf710439289",
+   "parent_call_path_id": "fbabe0ade39f7f21c42038e17042bfda8898ae789632707f82e0d5602fb11581",
+   "depth": 1,
+   "fqn": "baml.future.all",
+   "origin": "builtin",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 8791,
+   "self_ns": 8791,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "aaf3cadef3d82ac105ce2948c043b9e88c7f522873db645b1304abe61b37a0ba",
+   "parent_call_path_id": "fbabe0ade39f7f21c42038e17042bfda8898ae789632707f82e0d5602fb11581",
+   "depth": 1,
+   "fqn": "baml.spawn.TaskGroup.new",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 4125,
+   "self_ns": 4125,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "4d62e68cd64e3c92160a2ffa38c4eb8d2ae39fa2c8c1e3c25b17fcdfd4a60402",
+   "parent_call_path_id": "63156a55438e291613d14708db6fe6286968cf5962f257b215ef66d03611dede",
+   "depth": 2,
+   "fqn": ".<lambda(<lambda(run_eval, 0)>, 1)>",
+   "origin": "internal",
+   "kind": "bytecode",
+   "edge_kind": "spawn",
+   "calls_started": 999,
+   "inclusive_ns": 7385550385145,
+   "self_ns": 11953218,
+   "await_ns": 7268118127357
+  },
+  {
+   "call_path_id": "3f65c50fad2168244b1f3a6f0cc12a061a487da48881e5080a365ed3bef22c7a",
+   "parent_call_path_id": "347c0c857904aa46c79173fe81dace39d72993f032f052f0bacb8cf710439289",
+   "depth": 2,
+   "fqn": ".<lambda(all, 0)>",
+   "origin": "internal",
+   "kind": "bytecode",
+   "edge_kind": "spawn",
+   "calls_started": 1,
+   "inclusive_ns": 14733026291,
+   "self_ns": 2124502,
+   "await_ns": 2885292
+  },
+  {
+   "call_path_id": "3cb007e985a8f5eb85ca89ed74d43ee6644e705383e2293fea843e361b6e8ec2",
+   "parent_call_path_id": "a66b7c3f68f3c7f3b265c18796a521f8ef6bb95a432f14bc0568101e5ae4e3ba",
+   "depth": 2,
+   "fqn": ".<lambda(<lambda(run_eval, 0)>, 1)>",
+   "origin": "internal",
+   "kind": "bytecode",
+   "edge_kind": "spawn",
+   "calls_started": 1,
+   "inclusive_ns": 150200958,
+   "self_ns": 36125,
+   "await_ns": 1166
+  },
+  {
+   "call_path_id": "fe9227a27f0962ce82d6995c89b3b570c7b5a3764d225cb43f4ae4724e0d2560",
+   "parent_call_path_id": "e3e2ffab493a476fdf0d25d3fbc1fb6522cafeda43d39a32eb0d6b447201b466",
+   "depth": 2,
+   "fqn": "baml.iter.Iterator.collect",
+   "origin": "builtin",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 2962500,
+   "self_ns": 1246267,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "43dc17846268ec6b1595b5df17e8d826b21736088fcc733f9b711249ecdf9f6a",
+   "parent_call_path_id": "63156a55438e291613d14708db6fe6286968cf5962f257b215ef66d03611dede",
+   "depth": 2,
+   "fqn": "baml.spawn.options",
+   "origin": "builtin",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 999,
+   "inclusive_ns": 1329208,
+   "self_ns": 1329208,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "8f61cd4094f59b41ddfb2ada83fcf756025853354fae67eae7df88c873f7b7e7",
+   "parent_call_path_id": "63156a55438e291613d14708db6fe6286968cf5962f257b215ef66d03611dede",
+   "depth": 2,
+   "fqn": ".<lambda(options, 0)>",
+   "origin": "internal",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 999,
+   "inclusive_ns": 1071436,
+   "self_ns": 1071436,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "a116875dc65058babdba485679e6c1688798276d441038d286b764bb86892bdf",
+   "parent_call_path_id": "437a7eeb82fcc49e2d2aa450462135c5e0d8ecd43b67d378e05c8d3ee0688bef",
+   "depth": 2,
+   "fqn": ".<lambda(summarize, 0)>",
+   "origin": "internal",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 999,
+   "inclusive_ns": 868329,
+   "self_ns": 795318,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "888f9f1b3e7c4f1987b25f9905c15a0c227f79cbecfab56f0c252c4c0ff6ff5a",
+   "parent_call_path_id": "437a7eeb82fcc49e2d2aa450462135c5e0d8ecd43b67d378e05c8d3ee0688bef",
+   "depth": 2,
+   "fqn": "baml.String.from",
+   "origin": "builtin",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 111,
+   "inclusive_ns": 860500,
+   "self_ns": 415462,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "f2d206bb030d238a7907ddaca3ba530dcb0c3aaf08cb845e071065bd82318c9f",
+   "parent_call_path_id": "437a7eeb82fcc49e2d2aa450462135c5e0d8ecd43b67d378e05c8d3ee0688bef",
+   "depth": 2,
+   "fqn": "baml.iter.<(baml.iter.ArrayIterator<#0> as baml.iter.Iterator)>.next",
+   "origin": "builtin",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 1001,
+   "inclusive_ns": 450418,
+   "self_ns": 450418,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "93c948626bc4a0d9888741d15cc5c31081a6a937351d1093ffd3a2674631f21d",
+   "parent_call_path_id": "437a7eeb82fcc49e2d2aa450462135c5e0d8ecd43b67d378e05c8d3ee0688bef",
+   "depth": 2,
+   "fqn": ".<lambda(summarize, 1)>",
+   "origin": "internal",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 999,
+   "inclusive_ns": 205080,
+   "self_ns": 205080,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "3474954afc91f7d3995173cbc5491ba9e3a146cbec1cc03e82122e2a83e891ff",
+   "parent_call_path_id": "437a7eeb82fcc49e2d2aa450462135c5e0d8ecd43b67d378e05c8d3ee0688bef",
+   "depth": 2,
+   "fqn": "baml.Map.set",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 111,
+   "inclusive_ns": 28033,
+   "self_ns": 28033,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "8c0c2ba89c16501674c6ab83f5f22e8980bb75ebafbba66049053b0086b67b1f",
+   "parent_call_path_id": "437a7eeb82fcc49e2d2aa450462135c5e0d8ecd43b67d378e05c8d3ee0688bef",
+   "depth": 2,
+   "fqn": "baml.Map.get",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 111,
+   "inclusive_ns": 21916,
+   "self_ns": 21916,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "0c92e55cd919a224fc1cbe1aa5932c695baed24bc0960e7ad0fdd9b06705b6d8",
+   "parent_call_path_id": "e3e2ffab493a476fdf0d25d3fbc1fb6522cafeda43d39a32eb0d6b447201b466",
+   "depth": 2,
+   "fqn": "baml.csv.Reader.rows",
+   "origin": "builtin",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 12458,
+   "self_ns": 1624,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "fcf80f6d107c36ee7a0831052ddde8bd9ee1406288908c20effadcefa340822d",
+   "parent_call_path_id": "437a7eeb82fcc49e2d2aa450462135c5e0d8ecd43b67d378e05c8d3ee0688bef",
+   "depth": 2,
+   "fqn": "baml.iter.<(#0[] as baml.iter.Iterable)>.iter",
+   "origin": "builtin",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 5875,
+   "self_ns": 3458,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "833e85f43177aecc1d6fffca51934158e6f4af0d5efa5b2fa30aecf5668a7233",
+   "parent_call_path_id": "e3e2ffab493a476fdf0d25d3fbc1fb6522cafeda43d39a32eb0d6b447201b466",
+   "depth": 2,
+   "fqn": "baml.csv.reader",
+   "origin": "builtin",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 3667,
+   "self_ns": 1167,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "6756982cbc6f16b590c22a13751797e88b95ea2051a3efc55bb88022692b3f27",
+   "parent_call_path_id": "437a7eeb82fcc49e2d2aa450462135c5e0d8ecd43b67d378e05c8d3ee0688bef",
+   "depth": 2,
+   "fqn": ".<lambda(summarize, 0)>",
+   "origin": "internal",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 2750,
+   "self_ns": 2416,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "d468249f22c131b3d5749727a1cf39eb3577208ba6ab423ad00cd03e846a878c",
+   "parent_call_path_id": "a66b7c3f68f3c7f3b265c18796a521f8ef6bb95a432f14bc0568101e5ae4e3ba",
+   "depth": 2,
+   "fqn": "baml.spawn.options",
+   "origin": "builtin",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 1750,
+   "self_ns": 1750,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "a38bc8e321596cc213a76c694f59e15924ee806fad9904d5837f265000c08df9",
+   "parent_call_path_id": "a66b7c3f68f3c7f3b265c18796a521f8ef6bb95a432f14bc0568101e5ae4e3ba",
+   "depth": 2,
+   "fqn": ".<lambda(options, 0)>",
+   "origin": "internal",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 1209,
+   "self_ns": 1209,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "e02ba6279310714f64000b9f70d83e7c30f27d2c68ac6797cc2b1e178e08f97f",
+   "parent_call_path_id": "437a7eeb82fcc49e2d2aa450462135c5e0d8ecd43b67d378e05c8d3ee0688bef",
+   "depth": 2,
+   "fqn": ".<lambda(summarize, 1)>",
+   "origin": "internal",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 834,
+   "self_ns": 834,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "81bccd2ad0b6d6f34332a5a8bedd4bd2d8f9d8a9654a18953d8d39e95b44f96e",
+   "parent_call_path_id": "4d62e68cd64e3c92160a2ffa38c4eb8d2ae39fa2c8c1e3c25b17fcdfd4a60402",
+   "depth": 3,
+   "fqn": "user.evaluate",
+   "origin": "user",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 999,
+   "inclusive_ns": 117399492792,
+   "self_ns": 11183860,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "d5da36bfbd54589db3d412ef8ba7e9e040e218a610be2157e5e8714133d7ea68",
+   "parent_call_path_id": "3f65c50fad2168244b1f3a6f0cc12a061a487da48881e5080a365ed3bef22c7a",
+   "depth": 3,
+   "fqn": ".<lambda(<lambda(all, 0)>, 1)>",
+   "origin": "internal",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 999,
+   "inclusive_ns": 14588248163,
+   "self_ns": 2931652,
+   "await_ns": 14585316511
+  },
+  {
+   "call_path_id": "2c333c066a1cc51aa14bf56d1955b42d5329281bafd36ab34734712889410eac",
+   "parent_call_path_id": "3cb007e985a8f5eb85ca89ed74d43ee6644e705383e2293fea843e361b6e8ec2",
+   "depth": 3,
+   "fqn": "user.evaluate",
+   "origin": "user",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 149828625,
+   "self_ns": 45708,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "49a8009f2300060fe664a76961710315b384802d1467965c939c3840517c6559",
+   "parent_call_path_id": "3f65c50fad2168244b1f3a6f0cc12a061a487da48881e5080a365ed3bef22c7a",
+   "depth": 3,
+   "fqn": ".<lambda(<lambda(all, 0)>, 1)>",
+   "origin": "internal",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 139768334,
+   "self_ns": 3876,
+   "await_ns": 139764458
+  },
+  {
+   "call_path_id": "acb5f3b3a4746a6bcab00f43d926a938bb06162ff3b1425a0b012d21c2bd6c55",
+   "parent_call_path_id": "4d62e68cd64e3c92160a2ffa38c4eb8d2ae39fa2c8c1e3c25b17fcdfd4a60402",
+   "depth": 3,
+   "fqn": "user.traced",
+   "origin": "user",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 999,
+   "inclusive_ns": 20811778,
+   "self_ns": 2116080,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "2282072fbc37d9c4f0d79b7ea5abe4cec0a5ac08b868455fad72904cc4e05fb3",
+   "parent_call_path_id": "fe9227a27f0962ce82d6995c89b3b570c7b5a3764d225cb43f4ae4724e0d2560",
+   "depth": 3,
+   "fqn": "baml.csv.<(baml.csv.Rows<#0> as baml.iter.Iterator)>.next",
+   "origin": "builtin",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 1001,
+   "inclusive_ns": 1681058,
+   "self_ns": 573313,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "d4c71043f308c7419d31d51d54e86db2f6fa15902c102dcbc36cf90c3fa2e08a",
+   "parent_call_path_id": "888f9f1b3e7c4f1987b25f9905c15a0c227f79cbecfab56f0c252c4c0ff6ff5a",
+   "depth": 3,
+   "fqn": "baml._to_string_default",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 111,
+   "inclusive_ns": 445038,
+   "self_ns": 445038,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "c930751c823e8eeb4c500f09314f4e9da5a1d1f07ab65793794b2ac2d659dc47",
+   "parent_call_path_id": "3cb007e985a8f5eb85ca89ed74d43ee6644e705383e2293fea843e361b6e8ec2",
+   "depth": 3,
+   "fqn": "user.traced",
+   "origin": "user",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 335042,
+   "self_ns": 1834,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "a8d7bcf72f15a95452a85b71307ad9eec699c4d64835e69b373c9b450b05e933",
+   "parent_call_path_id": "a116875dc65058babdba485679e6c1688798276d441038d286b764bb86892bdf",
+   "depth": 3,
+   "fqn": "baml.ops.equals_equals",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 999,
+   "inclusive_ns": 73011,
+   "self_ns": 73011,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "86f1ad4cc9ea96361c5e9e9adef2776a7cfdd274855f26568e688fa68b8412c4",
+   "parent_call_path_id": "fe9227a27f0962ce82d6995c89b3b570c7b5a3764d225cb43f4ae4724e0d2560",
+   "depth": 3,
+   "fqn": "baml.Array.push",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 1000,
+   "inclusive_ns": 35175,
+   "self_ns": 35175,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "62884344c7af36c2eb0c397d8cee8e78bc1cbd6dd24ee88ab01c04dbb1557b49",
+   "parent_call_path_id": "0c92e55cd919a224fc1cbe1aa5932c695baed24bc0960e7ad0fdd9b06705b6d8",
+   "depth": 3,
+   "fqn": "baml.csv.Reader.headers",
+   "origin": "builtin",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 7084,
+   "self_ns": 1043,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "affd38d83cbd09e9e88f8b81ff8e843531db91b1019458376535e6b338e802c9",
+   "parent_call_path_id": "0c92e55cd919a224fc1cbe1aa5932c695baed24bc0960e7ad0fdd9b06705b6d8",
+   "depth": 3,
+   "fqn": "baml.csv._validate_columns",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 3750,
+   "self_ns": 3750,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "159699c0868a90310965eeac70787444cc6bc486ef54d31fab728e9309f40d4c",
+   "parent_call_path_id": "833e85f43177aecc1d6fffca51934158e6f4af0d5efa5b2fa30aecf5668a7233",
+   "depth": 3,
+   "fqn": "baml.csv._reader",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 2500,
+   "self_ns": 2500,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "e1cb698246e7fe21d0c164c846f15263bfefc6e7a8afbf99aa24ae8b6eaa9d7b",
+   "parent_call_path_id": "fcf80f6d107c36ee7a0831052ddde8bd9ee1406288908c20effadcefa340822d",
+   "depth": 3,
+   "fqn": "baml.iter.ArrayIterator.new",
+   "origin": "builtin",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 2417,
+   "self_ns": 2417,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "9cb489f8e7f150fffed5c524d2e32bd2a67093a250e00f0b68c8e1cf181cb753",
+   "parent_call_path_id": "6756982cbc6f16b590c22a13751797e88b95ea2051a3efc55bb88022692b3f27",
+   "depth": 3,
+   "fqn": "baml.ops.equals_equals",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 334,
+   "self_ns": 334,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "d1528c28e6a9d67f0da2327d0bb1f5582a6da2e0a61e07eb7c822f390e965812",
+   "parent_call_path_id": "81bccd2ad0b6d6f34332a5a8bedd4bd2d8f9d8a9654a18953d8d39e95b44f96e",
+   "depth": 4,
+   "fqn": "user.process_address",
+   "origin": "user",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 999,
+   "inclusive_ns": 117373484637,
+   "self_ns": 14138389,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "858567a5d81828f4499db256f56e2c8cd9db302f0f64cfc3b3a6a211b2770f53",
+   "parent_call_path_id": "2c333c066a1cc51aa14bf56d1955b42d5329281bafd36ab34734712889410eac",
+   "depth": 4,
+   "fqn": "user.process_address",
+   "origin": "user",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 149734875,
+   "self_ns": 8752,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "ea52963f15abe130afea941351e6eb3e6b29ab7c6b94776d07e195d2895642da",
+   "parent_call_path_id": "acb5f3b3a4746a6bcab00f43d926a938bb06162ff3b1425a0b012d21c2bd6c55",
+   "depth": 4,
+   "fqn": "boundary.id",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 999,
+   "inclusive_ns": 18219487,
+   "self_ns": 18219487,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "933cf1acc27a5d58267a40d9f3db55e9e6fef3fc5e070a8b704e2f6d5fa24338",
+   "parent_call_path_id": "81bccd2ad0b6d6f34332a5a8bedd4bd2d8f9d8a9654a18953d8d39e95b44f96e",
+   "depth": 4,
+   "fqn": "baml.ops.equals_equals",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 888,
+   "inclusive_ns": 9341882,
+   "self_ns": 9341882,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "6ae425abcd6fbbb917e65c6433cf47f57f1dc780359be1756fa44e16f8580eb5",
+   "parent_call_path_id": "81bccd2ad0b6d6f34332a5a8bedd4bd2d8f9d8a9654a18953d8d39e95b44f96e",
+   "depth": 4,
+   "fqn": "user.traced",
+   "origin": "user",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 999,
+   "inclusive_ns": 5482413,
+   "self_ns": 1559442,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "ebc2b3bd6b05e701b0e110b294caeb8af3671bc6928970a146165d4411ac28bf",
+   "parent_call_path_id": "2282072fbc37d9c4f0d79b7ea5abe4cec0a5ac08b868455fad72904cc4e05fb3",
+   "depth": 4,
+   "fqn": "baml.csv.<(baml.csv.Reader as baml.iter.Iterator)>.next",
+   "origin": "builtin",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 1001,
+   "inclusive_ns": 654716,
+   "self_ns": 212132,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "8c7d8fec9ff327d8252f4f8eb4f0114944389e84d21815ea3f9f95a7665e6565",
+   "parent_call_path_id": "acb5f3b3a4746a6bcab00f43d926a938bb06162ff3b1425a0b012d21c2bd6c55",
+   "depth": 4,
+   "fqn": "boundary.LocalId.capture",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 999,
+   "inclusive_ns": 476211,
+   "self_ns": 476211,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "ced4f50a4e3465cdae2c731765ac020d3716e63aef4158e67ea9469175c7d07e",
+   "parent_call_path_id": "2282072fbc37d9c4f0d79b7ea5abe4cec0a5ac08b868455fad72904cc4e05fb3",
+   "depth": 4,
+   "fqn": "baml.csv._try_decode",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 1000,
+   "inclusive_ns": 453029,
+   "self_ns": 453029,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "7bd196ce5880965ef84bf3dae9f9a4daab8097e9ffaf027566af3c4d56eafa74",
+   "parent_call_path_id": "c930751c823e8eeb4c500f09314f4e9da5a1d1f07ab65793794b2ac2d659dc47",
+   "depth": 4,
+   "fqn": "boundary.id",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 332750,
+   "self_ns": 332750,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "52866a4c3c0f2e4ba5763fa4fb72a2587345c92ed36f8465db1a521f4c00a96e",
+   "parent_call_path_id": "2c333c066a1cc51aa14bf56d1955b42d5329281bafd36ab34734712889410eac",
+   "depth": 4,
+   "fqn": "user.traced",
+   "origin": "user",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 43292,
+   "self_ns": 1792,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "196717cae7662d702f4327d8d16c09ee58b4abdf76f211776a882d23beb7b51d",
+   "parent_call_path_id": "62884344c7af36c2eb0c397d8cee8e78bc1cbd6dd24ee88ab01c04dbb1557b49",
+   "depth": 4,
+   "fqn": "baml.csv.Reader._poll_headers",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 6041,
+   "self_ns": 6041,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "ff56378efa8a48661bef27ddefa6907d77d56ef0bb7445c956982b6b3b00c52c",
+   "parent_call_path_id": "2c333c066a1cc51aa14bf56d1955b42d5329281bafd36ab34734712889410eac",
+   "depth": 4,
+   "fqn": "baml.ops.equals_equals",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 4750,
+   "self_ns": 4750,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "9df6b228cb538f6e8f0fb82a06e73a11d034a9300f77b27a896085548b2e16cd",
+   "parent_call_path_id": "c930751c823e8eeb4c500f09314f4e9da5a1d1f07ab65793794b2ac2d659dc47",
+   "depth": 4,
+   "fqn": "boundary.LocalId.capture",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 458,
+   "self_ns": 458,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "1c47c17d3e4e91144429f6c1d93a747bad2fa21c25a3035a052c2042a40bab46",
+   "parent_call_path_id": "d1528c28e6a9d67f0da2327d0bb1f5582a6da2e0a61e07eb7c822f390e965812",
+   "depth": 5,
+   "fqn": "user.geocode",
+   "origin": "user",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 961,
+   "inclusive_ns": 42966211631,
+   "self_ns": 14086036,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "f62fa463aa768219c453153f3dedc04f3799b291718a3562798f605a895f5c20",
+   "parent_call_path_id": "d1528c28e6a9d67f0da2327d0bb1f5582a6da2e0a61e07eb7c822f390e965812",
+   "depth": 5,
+   "fqn": "user.lookup_parcel",
+   "origin": "user",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 928,
+   "inclusive_ns": 27669996717,
+   "self_ns": 17576549,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "b7a558e22b3e890670bcd7f20c0e7f23315855c1310aac945ca3886305ac520b",
+   "parent_call_path_id": "d1528c28e6a9d67f0da2327d0bb1f5582a6da2e0a61e07eb7c822f390e965812",
+   "depth": 5,
+   "fqn": "user.classify_building",
+   "origin": "user",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 928,
+   "inclusive_ns": 17730740379,
+   "self_ns": 51076967,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "3ed265be2a6771651c935c79c46ead9048b7f2e82d9fa89bebd7b70ba23d8623",
+   "parent_call_path_id": "d1528c28e6a9d67f0da2327d0bb1f5582a6da2e0a61e07eb7c822f390e965812",
+   "depth": 5,
+   "fqn": "user.geocode_fallback",
+   "origin": "user",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 152,
+   "inclusive_ns": 9853167542,
+   "self_ns": 2386955,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "dadb57a35ded5b22512ab56a36c40a4c821d7e1d273b47638fb94acac426afe6",
+   "parent_call_path_id": "d1528c28e6a9d67f0da2327d0bb1f5582a6da2e0a61e07eb7c822f390e965812",
+   "depth": 5,
+   "fqn": "user.parse_address",
+   "origin": "user",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 999,
+   "inclusive_ns": 7408996496,
+   "self_ns": 12385573,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "f604c93260f7169a03b25469adbd84c6bc917991e9d77ea1397ef10915ff0f9b",
+   "parent_call_path_id": "d1528c28e6a9d67f0da2327d0bb1f5582a6da2e0a61e07eb7c822f390e965812",
+   "depth": 5,
+   "fqn": "user.enrich_residential",
+   "origin": "user",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 443,
+   "inclusive_ns": 5817583008,
+   "self_ns": 5836798,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "a493c67c7f439b3cd15aeb6b402e023ee0e6efb883878729f4a8bd5b7a5320a1",
+   "parent_call_path_id": "d1528c28e6a9d67f0da2327d0bb1f5582a6da2e0a61e07eb7c822f390e965812",
+   "depth": 5,
+   "fqn": "user.enrich_commercial",
+   "origin": "user",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 333,
+   "inclusive_ns": 4393891661,
+   "self_ns": 4556191,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "9c85c807de56ea63f10e9000a35942f6816a959381633279f214fbdc578c6b3b",
+   "parent_call_path_id": "d1528c28e6a9d67f0da2327d0bb1f5582a6da2e0a61e07eb7c822f390e965812",
+   "depth": 5,
+   "fqn": "user.enrich_industrial",
+   "origin": "user",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 112,
+   "inclusive_ns": 1465558367,
+   "self_ns": 1500740,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "15c35225f856293d3700f606f413d3fc03c2adc1770b9508e5da4a6caf69b1f2",
+   "parent_call_path_id": "858567a5d81828f4499db256f56e2c8cd9db302f0f64cfc3b3a6a211b2770f53",
+   "depth": 5,
+   "fqn": "user.geocode",
+   "origin": "user",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 45770750,
+   "self_ns": 5042,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "85d9666b6a5ea6c67191562b01e884245c657b2e665c448539f70b93c59180ab",
+   "parent_call_path_id": "858567a5d81828f4499db256f56e2c8cd9db302f0f64cfc3b3a6a211b2770f53",
+   "depth": 5,
+   "fqn": "user.parse_address",
+   "origin": "user",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 39845792,
+   "self_ns": 4167,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "e8c638cdd21f49c6f17f06d1c80efcd900827504c86d3b724c9768c1d8a1276a",
+   "parent_call_path_id": "858567a5d81828f4499db256f56e2c8cd9db302f0f64cfc3b3a6a211b2770f53",
+   "depth": 5,
+   "fqn": "user.lookup_parcel",
+   "origin": "user",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 29277375,
+   "self_ns": 14291,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "ba5fcb9626ca590fae8bdb048d5e1fd364282efe605dbf930445018cdfe4745a",
+   "parent_call_path_id": "858567a5d81828f4499db256f56e2c8cd9db302f0f64cfc3b3a6a211b2770f53",
+   "depth": 5,
+   "fqn": "user.classify_building",
+   "origin": "user",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 21872666,
+   "self_ns": 5500,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "0ffd3fdb57a661d9657ff4e47adacdfe046799d54e27286d848fee755fc52cdb",
+   "parent_call_path_id": "858567a5d81828f4499db256f56e2c8cd9db302f0f64cfc3b3a6a211b2770f53",
+   "depth": 5,
+   "fqn": "user.enrich_commercial",
+   "origin": "user",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 12931875,
+   "self_ns": 4708,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "f907d173296457b1810f28c56ce065574bd64e19360cd928655214d3760aec6e",
+   "parent_call_path_id": "d1528c28e6a9d67f0da2327d0bb1f5582a6da2e0a61e07eb7c822f390e965812",
+   "depth": 5,
+   "fqn": "user.traced",
+   "origin": "user",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 928,
+   "inclusive_ns": 12205795,
+   "self_ns": 1551136,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "86bfafc3852fadd46efd1c9efcf698c7544ab40f491b096bc1a27f9f21130e09",
+   "parent_call_path_id": "d1528c28e6a9d67f0da2327d0bb1f5582a6da2e0a61e07eb7c822f390e965812",
+   "depth": 5,
+   "fqn": "user.traced",
+   "origin": "user",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 928,
+   "inclusive_ns": 11319172,
+   "self_ns": 1532658,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "774f2fcbc9267b645c51d8f72eb786db5cebb84a1459a14c1ba3a2265955bc3b",
+   "parent_call_path_id": "d1528c28e6a9d67f0da2327d0bb1f5582a6da2e0a61e07eb7c822f390e965812",
+   "depth": 5,
+   "fqn": "user.traced",
+   "origin": "user",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 961,
+   "inclusive_ns": 10839056,
+   "self_ns": 1546296,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "b0ce29fa56b3c55c18c70f7dedb7fa6b5b02ec36d35b969fc501473a32c835dd",
+   "parent_call_path_id": "d1528c28e6a9d67f0da2327d0bb1f5582a6da2e0a61e07eb7c822f390e965812",
+   "depth": 5,
+   "fqn": "user.traced",
+   "origin": "user",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 443,
+   "inclusive_ns": 4931505,
+   "self_ns": 712922,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "063bd8b4aac64d8244951a3dd1161992ebdedaaad59c88682f1ad38b66008dae",
+   "parent_call_path_id": "d1528c28e6a9d67f0da2327d0bb1f5582a6da2e0a61e07eb7c822f390e965812",
+   "depth": 5,
+   "fqn": "user.traced",
+   "origin": "user",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 333,
+   "inclusive_ns": 4776276,
+   "self_ns": 595640,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "c474bbf5c2b999edf25921b3da85e95df2e63a3f642378dbb2be6b6960f6b9b8",
+   "parent_call_path_id": "d1528c28e6a9d67f0da2327d0bb1f5582a6da2e0a61e07eb7c822f390e965812",
+   "depth": 5,
+   "fqn": "user.traced",
+   "origin": "user",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 999,
+   "inclusive_ns": 4094176,
+   "self_ns": 1029858,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "1f0ca694898586dbc9b4525ba1bc3819488276e918d275e87d1ece481f36c658",
+   "parent_call_path_id": "6ae425abcd6fbbb917e65c6433cf47f57f1dc780359be1756fa44e16f8580eb5",
+   "depth": 5,
+   "fqn": "boundary.id",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 999,
+   "inclusive_ns": 3778230,
+   "self_ns": 3778230,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "e5af3eb84ada88462493fe8ed49426623da4a1c719cdb6e4dc6bc7b20c16dcbb",
+   "parent_call_path_id": "d1528c28e6a9d67f0da2327d0bb1f5582a6da2e0a61e07eb7c822f390e965812",
+   "depth": 5,
+   "fqn": "user.traced",
+   "origin": "user",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 152,
+   "inclusive_ns": 1900507,
+   "self_ns": 240422,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "ce70364a90e56eee03accd63e2506e8c76230f2f60a128d0a4f065791276100f",
+   "parent_call_path_id": "d1528c28e6a9d67f0da2327d0bb1f5582a6da2e0a61e07eb7c822f390e965812",
+   "depth": 5,
+   "fqn": "user.traced",
+   "origin": "user",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 112,
+   "inclusive_ns": 1244585,
+   "self_ns": 174827,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "266bd8e8c8b9e696e128f5957c261e5f654a69fbfbb4aff3f3ebcf959a7efa78",
+   "parent_call_path_id": "d1528c28e6a9d67f0da2327d0bb1f5582a6da2e0a61e07eb7c822f390e965812",
+   "depth": 5,
+   "fqn": "baml.String.from",
+   "origin": "builtin",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 40,
+   "inclusive_ns": 828790,
+   "self_ns": 507790,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "4b9ba14a5a9e7f121883f7f676815b190ee0ba21fed450f972cc0416745cdd39",
+   "parent_call_path_id": "d1528c28e6a9d67f0da2327d0bb1f5582a6da2e0a61e07eb7c822f390e965812",
+   "depth": 5,
+   "fqn": "baml.String.from",
+   "origin": "builtin",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 33,
+   "inclusive_ns": 586293,
+   "self_ns": 350999,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "5ebb3c7bbff1971cf4bfea7c962d3bdfd3c03918972d534b8864a91ff1ee1a4b",
+   "parent_call_path_id": "ebc2b3bd6b05e701b0e110b294caeb8af3671bc6928970a146165d4411ac28bf",
+   "depth": 5,
+   "fqn": "baml.csv.Reader._poll",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 1001,
+   "inclusive_ns": 442584,
+   "self_ns": 442584,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "4a6b2bcda842d2de82bf954f7ada0d4e46c19324e4b8a903c5955b7d44de015d",
+   "parent_call_path_id": "d1528c28e6a9d67f0da2327d0bb1f5582a6da2e0a61e07eb7c822f390e965812",
+   "depth": 5,
+   "fqn": "user.dropped",
+   "origin": "user",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 40,
+   "inclusive_ns": 230207,
+   "self_ns": 230207,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "af284e1eb6af2c6629aef27b3d945271babeea72b1ddfa47ffb0fdaed9c8c60b",
+   "parent_call_path_id": "d1528c28e6a9d67f0da2327d0bb1f5582a6da2e0a61e07eb7c822f390e965812",
+   "depth": 5,
+   "fqn": "user.dropped",
+   "origin": "user",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 38,
+   "inclusive_ns": 158251,
+   "self_ns": 158251,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "93d2219f309dafffe1db1fbbc64a25c225c958f6062bcc592134b19f5b4c4be6",
+   "parent_call_path_id": "6ae425abcd6fbbb917e65c6433cf47f57f1dc780359be1756fa44e16f8580eb5",
+   "depth": 5,
+   "fqn": "boundary.LocalId.capture",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 999,
+   "inclusive_ns": 144741,
+   "self_ns": 144741,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "98a23f9f159e5a042b48d635872a208e9d0bd3005e03b874f81320ba76a67913",
+   "parent_call_path_id": "d1528c28e6a9d67f0da2327d0bb1f5582a6da2e0a61e07eb7c822f390e965812",
+   "depth": 5,
+   "fqn": "user.dropped",
+   "origin": "user",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 33,
+   "inclusive_ns": 85834,
+   "self_ns": 85834,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "bd3427a64cb8caa96727d27dfb746076cb30356797f386f07254e7712dec7a89",
+   "parent_call_path_id": "52866a4c3c0f2e4ba5763fa4fb72a2587345c92ed36f8465db1a521f4c00a96e",
+   "depth": 5,
+   "fqn": "boundary.id",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 41250,
+   "self_ns": 41250,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "9e2dc521f9ec2c76a5db62334e320fd23ceba78b1d550460a9804bef45e86c8b",
+   "parent_call_path_id": "858567a5d81828f4499db256f56e2c8cd9db302f0f64cfc3b3a6a211b2770f53",
+   "depth": 5,
+   "fqn": "user.traced",
+   "origin": "user",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 8708,
+   "self_ns": 1751,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "823d6732f4b4d49b160b18a2e0a8b674e78a819149e0bbfc87445f1965266a86",
+   "parent_call_path_id": "858567a5d81828f4499db256f56e2c8cd9db302f0f64cfc3b3a6a211b2770f53",
+   "depth": 5,
+   "fqn": "user.traced",
+   "origin": "user",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 6666,
+   "self_ns": 958,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "ba443355aeac36e21358cda5baafd85c39b952cd925a70675c5123b5ca139974",
+   "parent_call_path_id": "858567a5d81828f4499db256f56e2c8cd9db302f0f64cfc3b3a6a211b2770f53",
+   "depth": 5,
+   "fqn": "user.traced",
+   "origin": "user",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 4583,
+   "self_ns": 542,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "104915e9348ca090520063ac4644f354c193ba44acd1c8a2c886e35233eb2a57",
+   "parent_call_path_id": "858567a5d81828f4499db256f56e2c8cd9db302f0f64cfc3b3a6a211b2770f53",
+   "depth": 5,
+   "fqn": "user.traced",
+   "origin": "user",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 3916,
+   "self_ns": 666,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "203d529cead2a063e79ca7827c9afc51852330cb67e58d37ec65446a3449a2fc",
+   "parent_call_path_id": "858567a5d81828f4499db256f56e2c8cd9db302f0f64cfc3b3a6a211b2770f53",
+   "depth": 5,
+   "fqn": "user.traced",
+   "origin": "user",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 3792,
+   "self_ns": 625,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "bf6216fcb975c2a710df50a005a33791953a5b279a0ddbba5df08f908862be6e",
+   "parent_call_path_id": "52866a4c3c0f2e4ba5763fa4fb72a2587345c92ed36f8465db1a521f4c00a96e",
+   "depth": 5,
+   "fqn": "boundary.LocalId.capture",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 250,
+   "self_ns": 250,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "c48c92751522d76af6094dae1e505e32fbf9298b40922a1499ac315acf1a304c",
+   "parent_call_path_id": "1c47c17d3e4e91144429f6c1d93a747bad2fa21c25a3035a052c2042a40bab46",
+   "depth": 6,
+   "fqn": "user.post",
+   "origin": "user",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 961,
+   "inclusive_ns": 42952125595,
+   "self_ns": 20180655,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "abebd1b7bea651b1372af5ebbed28c481030b4a65447944ebf8daeeb75b6b1e0",
+   "parent_call_path_id": "f62fa463aa768219c453153f3dedc04f3799b291718a3562798f605a895f5c20",
+   "depth": 6,
+   "fqn": "user.post_or_null",
+   "origin": "user",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 928,
+   "inclusive_ns": 27652420168,
+   "self_ns": 2291387,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "00a350d974c55a855e916fd74482cd16969d675ae2fd4815d512e7fe28fa62c1",
+   "parent_call_path_id": "b7a558e22b3e890670bcd7f20c0e7f23315855c1310aac945ca3886305ac520b",
+   "depth": 6,
+   "fqn": "user.post",
+   "origin": "user",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 926,
+   "inclusive_ns": 17679663412,
+   "self_ns": 20577035,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "4a5d2ab6bee5feedabaa034a0fa50f9023fb22670837cb70b517bbd3b87c0a1b",
+   "parent_call_path_id": "3ed265be2a6771651c935c79c46ead9048b7f2e82d9fa89bebd7b70ba23d8623",
+   "depth": 6,
+   "fqn": "user.post_or_null",
+   "origin": "user",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 152,
+   "inclusive_ns": 9850780587,
+   "self_ns": 381121,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "6648ad9cd744fb42027ed52131a11e735bd4eae9098d2330d36bdbee10efd549",
+   "parent_call_path_id": "dadb57a35ded5b22512ab56a36c40a4c821d7e1d273b47638fb94acac426afe6",
+   "depth": 6,
+   "fqn": "user.post_or_null",
+   "origin": "user",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 998,
+   "inclusive_ns": 7396610923,
+   "self_ns": 2900259,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "489dff61ed28a0b64f1039585276583723cabadde3b78d6a7c4516d04f00d922",
+   "parent_call_path_id": "f604c93260f7169a03b25469adbd84c6bc917991e9d77ea1397ef10915ff0f9b",
+   "depth": 6,
+   "fqn": "user.post",
+   "origin": "user",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 443,
+   "inclusive_ns": 5811746210,
+   "self_ns": 8940053,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "e338484ca3e5b9b25a93315944722e83a745df09b20b480ff145073f954541fa",
+   "parent_call_path_id": "a493c67c7f439b3cd15aeb6b402e023ee0e6efb883878729f4a8bd5b7a5320a1",
+   "depth": 6,
+   "fqn": "user.post",
+   "origin": "user",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 333,
+   "inclusive_ns": 4389335470,
+   "self_ns": 9562881,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "6fbdff619329d5741e1120e101035afb9e8fec18f04e47de908717ffd49b1224",
+   "parent_call_path_id": "9c85c807de56ea63f10e9000a35942f6816a959381633279f214fbdc578c6b3b",
+   "depth": 6,
+   "fqn": "user.post",
+   "origin": "user",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 112,
+   "inclusive_ns": 1464057627,
+   "self_ns": 2212348,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "57deb9afacf46d79993eee11176979512d30b90f56fbda28434135508284b9b3",
+   "parent_call_path_id": "15c35225f856293d3700f606f413d3fc03c2adc1770b9508e5da4a6caf69b1f2",
+   "depth": 6,
+   "fqn": "user.post",
+   "origin": "user",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 45765708,
+   "self_ns": 7167,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "895ed3f3d84cbc853ceea967683668de8533c3fecf76b14236150c45fd3ba708",
+   "parent_call_path_id": "85d9666b6a5ea6c67191562b01e884245c657b2e665c448539f70b93c59180ab",
+   "depth": 6,
+   "fqn": "user.post_or_null",
+   "origin": "user",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 39841625,
+   "self_ns": 5916,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "7707ab886bad8371904c893a299ca0b45242de483e503d09d4d60a048e21f255",
+   "parent_call_path_id": "e8c638cdd21f49c6f17f06d1c80efcd900827504c86d3b724c9768c1d8a1276a",
+   "depth": 6,
+   "fqn": "user.post_or_null",
+   "origin": "user",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 29263084,
+   "self_ns": 876,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "c4ed254ed6f58989bbabc84162ba0c036e3f2048232d558201201988b17a6c2a",
+   "parent_call_path_id": "ba5fcb9626ca590fae8bdb048d5e1fd364282efe605dbf930445018cdfe4745a",
+   "depth": 6,
+   "fqn": "user.post",
+   "origin": "user",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 21867166,
+   "self_ns": 4917,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "27685e295d8ff4cce6cee3db605033d6f749612b1721b16ef7a9efd1697fdf7e",
+   "parent_call_path_id": "0ffd3fdb57a661d9657ff4e47adacdfe046799d54e27286d848fee755fc52cdb",
+   "depth": 6,
+   "fqn": "user.post",
+   "origin": "user",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 12927167,
+   "self_ns": 4919,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "934b6ca922148f3066907c827e00794e622d2adf47a14e03e0a37511ea9a215c",
+   "parent_call_path_id": "f907d173296457b1810f28c56ce065574bd64e19360cd928655214d3760aec6e",
+   "depth": 6,
+   "fqn": "boundary.id",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 928,
+   "inclusive_ns": 10260799,
+   "self_ns": 10260799,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "a96e84c09f3d5983f811f405b960c9733fb574675369321c80cb38f3548dc2ba",
+   "parent_call_path_id": "86bfafc3852fadd46efd1c9efcf698c7544ab40f491b096bc1a27f9f21130e09",
+   "depth": 6,
+   "fqn": "boundary.id",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 928,
+   "inclusive_ns": 9420425,
+   "self_ns": 9420425,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "be86030929b516dd3a8fc412a814174461a04f38821e17b370544342c8b0b124",
+   "parent_call_path_id": "774f2fcbc9267b645c51d8f72eb786db5cebb84a1459a14c1ba3a2265955bc3b",
+   "depth": 6,
+   "fqn": "boundary.id",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 961,
+   "inclusive_ns": 8913370,
+   "self_ns": 8913370,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "9cb4f7f244117d8fa08bf5b95c42886ff97ba1dacc3de7e1168eced68f53637d",
+   "parent_call_path_id": "063bd8b4aac64d8244951a3dd1161992ebdedaaad59c88682f1ad38b66008dae",
+   "depth": 6,
+   "fqn": "boundary.id",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 333,
+   "inclusive_ns": 4034717,
+   "self_ns": 4034717,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "c251d6d7ee3765f56d2e534ccefd7425d2ff13c5bd32c097e1f881fe8c7f2eb5",
+   "parent_call_path_id": "b0ce29fa56b3c55c18c70f7dedb7fa6b5b02ec36d35b969fc501473a32c835dd",
+   "depth": 6,
+   "fqn": "boundary.id",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 443,
+   "inclusive_ns": 4033086,
+   "self_ns": 4033086,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "b820dde88091068f090e26a254021a11595b801135f361bc00bcad81c38673f1",
+   "parent_call_path_id": "c474bbf5c2b999edf25921b3da85e95df2e63a3f642378dbb2be6b6960f6b9b8",
+   "depth": 6,
+   "fqn": "boundary.id",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 999,
+   "inclusive_ns": 2881255,
+   "self_ns": 2881255,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "f2803739eb864e2e50b749f25eeac980d3336178d3c5133e02217c32c3889741",
+   "parent_call_path_id": "e5af3eb84ada88462493fe8ed49426623da4a1c719cdb6e4dc6bc7b20c16dcbb",
+   "depth": 6,
+   "fqn": "boundary.id",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 152,
+   "inclusive_ns": 1601080,
+   "self_ns": 1601080,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "ed023bb6725b5fc4165f480afbb17b3d49a76a7e3698e633720fe3f3aaf35d48",
+   "parent_call_path_id": "ce70364a90e56eee03accd63e2506e8c76230f2f60a128d0a4f065791276100f",
+   "depth": 6,
+   "fqn": "boundary.id",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 112,
+   "inclusive_ns": 1021247,
+   "self_ns": 1021247,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "ee94e00ad737ba3f5ec98d751ed43d67d59636ed90491bc981b490ac0c34e122",
+   "parent_call_path_id": "f907d173296457b1810f28c56ce065574bd64e19360cd928655214d3760aec6e",
+   "depth": 6,
+   "fqn": "boundary.LocalId.capture",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 928,
+   "inclusive_ns": 393860,
+   "self_ns": 393860,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "791411a2e0b0fdb341cb49360a0bda7ab818221a7b0523aa28653a705ab5c6d6",
+   "parent_call_path_id": "774f2fcbc9267b645c51d8f72eb786db5cebb84a1459a14c1ba3a2265955bc3b",
+   "depth": 6,
+   "fqn": "boundary.LocalId.capture",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 961,
+   "inclusive_ns": 379390,
+   "self_ns": 379390,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "4098b5b593d408201e6edff5cdba7a87f7d307bdee989fd4f2f86aad81fba193",
+   "parent_call_path_id": "86bfafc3852fadd46efd1c9efcf698c7544ab40f491b096bc1a27f9f21130e09",
+   "depth": 6,
+   "fqn": "boundary.LocalId.capture",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 928,
+   "inclusive_ns": 366089,
+   "self_ns": 366089,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "8ce48c6229546fb430cb81acd1f0ed7395c81fde480cbc292775995fd81937c9",
+   "parent_call_path_id": "266bd8e8c8b9e696e128f5957c261e5f654a69fbfbb4aff3f3ebcf959a7efa78",
+   "depth": 6,
+   "fqn": "baml._to_string_default",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 40,
+   "inclusive_ns": 321000,
+   "self_ns": 321000,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "abec8b9a8d0697f4998a5eb4a090140ca7e324a4549475d0011a74c74036114d",
+   "parent_call_path_id": "4b9ba14a5a9e7f121883f7f676815b190ee0ba21fed450f972cc0416745cdd39",
+   "depth": 6,
+   "fqn": "baml._to_string_default",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 33,
+   "inclusive_ns": 235294,
+   "self_ns": 235294,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "dd176bd835e59e5dde52a465bbe1c3f559d7c0a955962cc273936a906ee20016",
+   "parent_call_path_id": "b0ce29fa56b3c55c18c70f7dedb7fa6b5b02ec36d35b969fc501473a32c835dd",
+   "depth": 6,
+   "fqn": "boundary.LocalId.capture",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 443,
+   "inclusive_ns": 185497,
+   "self_ns": 185497,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "3c2a227aebd517e9168459327fe413e8dbd17e373f7caae16f1bb96eb8da21ed",
+   "parent_call_path_id": "c474bbf5c2b999edf25921b3da85e95df2e63a3f642378dbb2be6b6960f6b9b8",
+   "depth": 6,
+   "fqn": "boundary.LocalId.capture",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 999,
+   "inclusive_ns": 183063,
+   "self_ns": 183063,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "435adad8c5ef713acdbb4332ec85997f95b20d6614060b5a967931885d902780",
+   "parent_call_path_id": "063bd8b4aac64d8244951a3dd1161992ebdedaaad59c88682f1ad38b66008dae",
+   "depth": 6,
+   "fqn": "boundary.LocalId.capture",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 333,
+   "inclusive_ns": 145919,
+   "self_ns": 145919,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "977a0b4f85f235da9928b7b9296922d3a09d8bcdece444450607aef0c33a1919",
+   "parent_call_path_id": "e5af3eb84ada88462493fe8ed49426623da4a1c719cdb6e4dc6bc7b20c16dcbb",
+   "depth": 6,
+   "fqn": "boundary.LocalId.capture",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 152,
+   "inclusive_ns": 59005,
+   "self_ns": 59005,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "ac6d34c7f95a7d82ef2f5c3d7a76aff207c04c93411f2b5d9889f6352426b6a4",
+   "parent_call_path_id": "ce70364a90e56eee03accd63e2506e8c76230f2f60a128d0a4f065791276100f",
+   "depth": 6,
+   "fqn": "boundary.LocalId.capture",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 112,
+   "inclusive_ns": 48511,
+   "self_ns": 48511,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "7746090058f3554a2d8b3bd2f1af2b9d87e55c47d363ba3eac768b1116170e5e",
+   "parent_call_path_id": "9e2dc521f9ec2c76a5db62334e320fd23ceba78b1d550460a9804bef45e86c8b",
+   "depth": 6,
+   "fqn": "boundary.id",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 6541,
+   "self_ns": 6541,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "b6e89044d70ece78758022202cb685d7d08bc3da689f854849bc72ba3d4120d2",
+   "parent_call_path_id": "823d6732f4b4d49b160b18a2e0a8b674e78a819149e0bbfc87445f1965266a86",
+   "depth": 6,
+   "fqn": "boundary.id",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 5500,
+   "self_ns": 5500,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "0d267cd73ffa90531886b205fc407314b308f9d45f1a43bedcbd002268e395a1",
+   "parent_call_path_id": "ba443355aeac36e21358cda5baafd85c39b952cd925a70675c5123b5ca139974",
+   "depth": 6,
+   "fqn": "boundary.id",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 3958,
+   "self_ns": 3958,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "abfe370649abd9dc40c7f62367177c842aa942fb6815a54a02ce09b0c95a8e0d",
+   "parent_call_path_id": "104915e9348ca090520063ac4644f354c193ba44acd1c8a2c886e35233eb2a57",
+   "depth": 6,
+   "fqn": "boundary.id",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 3125,
+   "self_ns": 3125,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "3c3f8c30ab00e2544301833bb6d7e7cae9667b3c79e73bcb823f4c929a1315a2",
+   "parent_call_path_id": "203d529cead2a063e79ca7827c9afc51852330cb67e58d37ec65446a3449a2fc",
+   "depth": 6,
+   "fqn": "boundary.id",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 3042,
+   "self_ns": 3042,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "06c7a116ae6d39e46fa7dac3efb6dcae06b636d164befdf2ec2a78c928360d2c",
+   "parent_call_path_id": "9e2dc521f9ec2c76a5db62334e320fd23ceba78b1d550460a9804bef45e86c8b",
+   "depth": 6,
+   "fqn": "boundary.LocalId.capture",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 416,
+   "self_ns": 416,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "f252f0b54c095eb240f4bff3fd92600fa58d187fd9bcbaaf04f26f2f40a89b8f",
+   "parent_call_path_id": "823d6732f4b4d49b160b18a2e0a8b674e78a819149e0bbfc87445f1965266a86",
+   "depth": 6,
+   "fqn": "boundary.LocalId.capture",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 208,
+   "self_ns": 208,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "419e91f53ed13cb1f473912f668c5b9e6190a35482bf0e6ac61098649df4bad5",
+   "parent_call_path_id": "104915e9348ca090520063ac4644f354c193ba44acd1c8a2c886e35233eb2a57",
+   "depth": 6,
+   "fqn": "boundary.LocalId.capture",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 125,
+   "self_ns": 125,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "4d6351ab492ca4f71864d3b07355c9b6077cb2c7e6559f3be0ff12fc1656cec2",
+   "parent_call_path_id": "203d529cead2a063e79ca7827c9afc51852330cb67e58d37ec65446a3449a2fc",
+   "depth": 6,
+   "fqn": "boundary.LocalId.capture",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 125,
+   "self_ns": 125,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "b226a1baec254f8d2d5d9dc78bd48826d43adb24a7c02251bd7e7d9805faf46e",
+   "parent_call_path_id": "ba443355aeac36e21358cda5baafd85c39b952cd925a70675c5123b5ca139974",
+   "depth": 6,
+   "fqn": "boundary.LocalId.capture",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 83,
+   "self_ns": 83,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "7c309af0ee66cfd42009eb46e858f1d2b09160514fe596de3735d586e67332e7",
+   "parent_call_path_id": "c48c92751522d76af6094dae1e505e32fbf9298b40922a1499ac315acf1a304c",
+   "depth": 7,
+   "fqn": "baml.http.send",
+   "origin": "builtin",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 961,
+   "inclusive_ns": 42791758270,
+   "self_ns": 19546127,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "6497b724e243c5f5874ed428ce8cd6a81d7c300fd8e6fbc6490fb1a2d5434c68",
+   "parent_call_path_id": "abebd1b7bea651b1372af5ebbed28c481030b4a65447944ebf8daeeb75b6b1e0",
+   "depth": 7,
+   "fqn": "user.post",
+   "origin": "user",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 928,
+   "inclusive_ns": 27650128781,
+   "self_ns": 28157611,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "07027103ea5fe012aab4f4710634e37ea3cafec582db99b666daae4f6dc4e634",
+   "parent_call_path_id": "00a350d974c55a855e916fd74482cd16969d675ae2fd4815d512e7fe28fa62c1",
+   "depth": 7,
+   "fqn": "baml.http.send",
+   "origin": "builtin",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 926,
+   "inclusive_ns": 17534515534,
+   "self_ns": 18612295,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "ec9834cbe64ab483b901c0b39030941a4cdd7508ef051686879811389f8e757f",
+   "parent_call_path_id": "4a5d2ab6bee5feedabaa034a0fa50f9023fb22670837cb70b517bbd3b87c0a1b",
+   "depth": 7,
+   "fqn": "user.post",
+   "origin": "user",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 152,
+   "inclusive_ns": 9850399466,
+   "self_ns": 3024435,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "6da7242040a25af03a0ad4254013f16f686d16e471047a5fdc2a4e08b2a7e094",
+   "parent_call_path_id": "6648ad9cd744fb42027ed52131a11e735bd4eae9098d2330d36bdbee10efd549",
+   "depth": 7,
+   "fqn": "user.post",
+   "origin": "user",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 998,
+   "inclusive_ns": 7393710664,
+   "self_ns": 19109777,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "076cd356b6635edeaa44a9f24f0c9c44057873a5bc08a84c3000842299c3f555",
+   "parent_call_path_id": "489dff61ed28a0b64f1039585276583723cabadde3b78d6a7c4516d04f00d922",
+   "depth": 7,
+   "fqn": "baml.http.send",
+   "origin": "builtin",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 443,
+   "inclusive_ns": 5744948747,
+   "self_ns": 7889026,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "b683ed3ed90b3c3b5266721f6ae3e21eeec5748fd5208f46c904ceb242864790",
+   "parent_call_path_id": "e338484ca3e5b9b25a93315944722e83a745df09b20b480ff145073f954541fa",
+   "depth": 7,
+   "fqn": "baml.http.send",
+   "origin": "builtin",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 333,
+   "inclusive_ns": 4328080246,
+   "self_ns": 7037210,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "6fdf074a5156817b0a06ecebc6eaf997e25f394803c18e159ffab7add073205f",
+   "parent_call_path_id": "6fbdff619329d5741e1120e101035afb9e8fec18f04e47de908717ffd49b1224",
+   "depth": 7,
+   "fqn": "baml.http.send",
+   "origin": "builtin",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 112,
+   "inclusive_ns": 1447230501,
+   "self_ns": 1897330,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "f11160c5b3f2b282be0188f7eab0a5eda2cb31622165a3b9bb5975c6f7902087",
+   "parent_call_path_id": "c48c92751522d76af6094dae1e505e32fbf9298b40922a1499ac315acf1a304c",
+   "depth": 7,
+   "fqn": "baml.http.Response.text",
+   "origin": "builtin",
+   "kind": "sysop",
+   "edge_kind": "call",
+   "calls_started": 902,
+   "inclusive_ns": 62546364,
+   "self_ns": 13105190,
+   "await_ns": 49441174
+  },
+  {
+   "call_path_id": "d55f61e3cc8ce3bdeef2adb4e339f4459e50e3dd6771d02597f9ff11f159aae6",
+   "parent_call_path_id": "00a350d974c55a855e916fd74482cd16969d675ae2fd4815d512e7fe28fa62c1",
+   "depth": 7,
+   "fqn": "baml.http.Response.text",
+   "origin": "builtin",
+   "kind": "sysop",
+   "edge_kind": "call",
+   "calls_started": 866,
+   "inclusive_ns": 60919078,
+   "self_ns": 12022771,
+   "await_ns": 48896307
+  },
+  {
+   "call_path_id": "879d251ed383ecc802bed3d4ca13f09758b320744dc4d80004fdc22623b0cfb7",
+   "parent_call_path_id": "57deb9afacf46d79993eee11176979512d30b90f56fbda28434135508284b9b3",
+   "depth": 7,
+   "fqn": "baml.http.send",
+   "origin": "builtin",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 45646750,
+   "self_ns": 6750,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "ed2ed5456150add18d4f7be587efa800bf6a1132602dfbe69fbd449dfec2c345",
+   "parent_call_path_id": "895ed3f3d84cbc853ceea967683668de8533c3fecf76b14236150c45fd3ba708",
+   "depth": 7,
+   "fqn": "user.post",
+   "origin": "user",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 39835709,
+   "self_ns": 35460,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "a3b770cf5b3c0e57b17887470c1ec2fd2556e09f7296ed893510e508d9717929",
+   "parent_call_path_id": "c48c92751522d76af6094dae1e505e32fbf9298b40922a1499ac315acf1a304c",
+   "depth": 7,
+   "fqn": "baml.json.to_string",
+   "origin": "builtin",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 961,
+   "inclusive_ns": 31604790,
+   "self_ns": 1064901,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "c7320e26c900a6555c31fb92a017b09babc368ed0f04226d73ca692c41d05101",
+   "parent_call_path_id": "7707ab886bad8371904c893a299ca0b45242de483e503d09d4d60a048e21f255",
+   "depth": 7,
+   "fqn": "user.post",
+   "origin": "user",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 29262208,
+   "self_ns": 6250,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "331b0de4d120ea25eb3a7aeba7b2b7bf93c3ef81ef438bd64e4f6a21cceb1836",
+   "parent_call_path_id": "00a350d974c55a855e916fd74482cd16969d675ae2fd4815d512e7fe28fa62c1",
+   "depth": 7,
+   "fqn": "baml.String.from",
+   "origin": "builtin",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 1852,
+   "inclusive_ns": 26672586,
+   "self_ns": 16965829,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "f0c68ddc258cb210d3535c00d0c79122237314beb8d6f69a936c52a5746fa238",
+   "parent_call_path_id": "c48c92751522d76af6094dae1e505e32fbf9298b40922a1499ac315acf1a304c",
+   "depth": 7,
+   "fqn": "baml.String.from",
+   "origin": "builtin",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 1922,
+   "inclusive_ns": 25526536,
+   "self_ns": 15429857,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "ac382a21c7bedd506ca0157583e315c90ad7d83c9656bac4a4b5186090339dec",
+   "parent_call_path_id": "489dff61ed28a0b64f1039585276583723cabadde3b78d6a7c4516d04f00d922",
+   "depth": 7,
+   "fqn": "baml.http.Response.text",
+   "origin": "builtin",
+   "kind": "sysop",
+   "edge_kind": "call",
+   "calls_started": 416,
+   "inclusive_ns": 23859125,
+   "self_ns": 5074999,
+   "await_ns": 18784126
+  },
+  {
+   "call_path_id": "9b90bf9cb6e5fa953003a085f540a54cbbffd8878dd0fa0189f1cfdf4838cdae",
+   "parent_call_path_id": "c4ed254ed6f58989bbabc84162ba0c036e3f2048232d558201201988b17a6c2a",
+   "depth": 7,
+   "fqn": "baml.http.send",
+   "origin": "builtin",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 21815292,
+   "self_ns": 10167,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "2bdc00358979dbc27f831ceef7af00943a0c38b03975a2d25640c3f0174f4d25",
+   "parent_call_path_id": "e338484ca3e5b9b25a93315944722e83a745df09b20b480ff145073f954541fa",
+   "depth": 7,
+   "fqn": "baml.http.Response.text",
+   "origin": "builtin",
+   "kind": "sysop",
+   "edge_kind": "call",
+   "calls_started": 315,
+   "inclusive_ns": 18376080,
+   "self_ns": 3973623,
+   "await_ns": 14402457
+  },
+  {
+   "call_path_id": "4f6d6417fd8ecd523478d2d09705ce47e004587e60bc62e1815926b51d25334c",
+   "parent_call_path_id": "00a350d974c55a855e916fd74482cd16969d675ae2fd4815d512e7fe28fa62c1",
+   "depth": 7,
+   "fqn": "baml.json.to_string",
+   "origin": "builtin",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 926,
+   "inclusive_ns": 18193755,
+   "self_ns": 1074653,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "cb02cf55ce8154931492731853c59f1278860bc4887f91f1509741ab93415375",
+   "parent_call_path_id": "489dff61ed28a0b64f1039585276583723cabadde3b78d6a7c4516d04f00d922",
+   "depth": 7,
+   "fqn": "baml.json.to_string",
+   "origin": "builtin",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 443,
+   "inclusive_ns": 13658368,
+   "self_ns": 471786,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "76df32a8ce2bc3ac63850549229ac4fc765988c2dffcf20806fcfeb50b5ae7e3",
+   "parent_call_path_id": "27685e295d8ff4cce6cee3db605033d6f749612b1721b16ef7a9efd1697fdf7e",
+   "depth": 7,
+   "fqn": "baml.http.send",
+   "origin": "builtin",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 12869375,
+   "self_ns": 8125,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "68ea7a212eba58c259c490f6f3d82268516eb68afe1d1a7f0789d9ca87364a36",
+   "parent_call_path_id": "489dff61ed28a0b64f1039585276583723cabadde3b78d6a7c4516d04f00d922",
+   "depth": 7,
+   "fqn": "baml.String.from",
+   "origin": "builtin",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 886,
+   "inclusive_ns": 12353643,
+   "self_ns": 7078960,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "36176aa268af5cdf1b83b7623bfaa36b4051b8eb8919ec9ac5be8b225a60c87d",
+   "parent_call_path_id": "e338484ca3e5b9b25a93315944722e83a745df09b20b480ff145073f954541fa",
+   "depth": 7,
+   "fqn": "baml.json.to_string",
+   "origin": "builtin",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 333,
+   "inclusive_ns": 11156630,
+   "self_ns": 376750,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "726407dd7fb00225a7b1c0ed07c3082269a94a3eb2ee94600716622931b1a7bf",
+   "parent_call_path_id": "c48c92751522d76af6094dae1e505e32fbf9298b40922a1499ac315acf1a304c",
+   "depth": 7,
+   "fqn": "baml.json.from_string",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 961,
+   "inclusive_ns": 10046414,
+   "self_ns": 10046414,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "1395b7693b0c1218a460b00500616c47494633298fbabf604dab4767db05095b",
+   "parent_call_path_id": "c48c92751522d76af6094dae1e505e32fbf9298b40922a1499ac315acf1a304c",
+   "depth": 7,
+   "fqn": "user.base_url",
+   "origin": "user",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 961,
+   "inclusive_ns": 9508034,
+   "self_ns": 1256102,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "2a7587d517731e1ea160938fcb21863a3de8def9822cdf7b8fc476f84e9252bb",
+   "parent_call_path_id": "e338484ca3e5b9b25a93315944722e83a745df09b20b480ff145073f954541fa",
+   "depth": 7,
+   "fqn": "baml.String.from",
+   "origin": "builtin",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 666,
+   "inclusive_ns": 9287128,
+   "self_ns": 5865222,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "22be5a080a749e284b41c6f454ec22a2cafc37e9f57ca7ce8c0be595a22bde78",
+   "parent_call_path_id": "00a350d974c55a855e916fd74482cd16969d675ae2fd4815d512e7fe28fa62c1",
+   "depth": 7,
+   "fqn": "baml.json.from_string",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 926,
+   "inclusive_ns": 9140522,
+   "self_ns": 9140522,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "d651fc472d644ca41a38186a5a7bd3f8da3d3fdec4dc4ef7fba23ecc5c0d403a",
+   "parent_call_path_id": "e338484ca3e5b9b25a93315944722e83a745df09b20b480ff145073f954541fa",
+   "depth": 7,
+   "fqn": "baml.json.from_string",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 333,
+   "inclusive_ns": 9022917,
+   "self_ns": 9022917,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "872d0bcd725b165b398674166eb34e7dbe99609b8ea38b87084e0fa28cc964b4",
+   "parent_call_path_id": "00a350d974c55a855e916fd74482cd16969d675ae2fd4815d512e7fe28fa62c1",
+   "depth": 7,
+   "fqn": "user.base_url",
+   "origin": "user",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 926,
+   "inclusive_ns": 8578340,
+   "self_ns": 1263121,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "ec0b991bb9241cf84c00902b8698b2e6924cae6dac8e46a84249f79b9a6ecce4",
+   "parent_call_path_id": "6fbdff619329d5741e1120e101035afb9e8fec18f04e47de908717ffd49b1224",
+   "depth": 7,
+   "fqn": "baml.http.Response.text",
+   "origin": "builtin",
+   "kind": "sysop",
+   "edge_kind": "call",
+   "calls_started": 108,
+   "inclusive_ns": 5809287,
+   "self_ns": 1287834,
+   "await_ns": 4521453
+  },
+  {
+   "call_path_id": "5806e39a218f11d5d45f47c02a0cd5dc9defd57e5d35d8e44d983b6d5cd069d3",
+   "parent_call_path_id": "489dff61ed28a0b64f1039585276583723cabadde3b78d6a7c4516d04f00d922",
+   "depth": 7,
+   "fqn": "user.base_url",
+   "origin": "user",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 443,
+   "inclusive_ns": 4271818,
+   "self_ns": 617863,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "57637a9be863ce27df7d18de79739f9442163f30cda2e99034046b74e331b190",
+   "parent_call_path_id": "6fbdff619329d5741e1120e101035afb9e8fec18f04e47de908717ffd49b1224",
+   "depth": 7,
+   "fqn": "baml.json.to_string",
+   "origin": "builtin",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 112,
+   "inclusive_ns": 3726538,
+   "self_ns": 115320,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "126ef8e6253f3f800179b85f85723a37e1cbeaa3e3a28184846b9d3eeb4f91c2",
+   "parent_call_path_id": "e338484ca3e5b9b25a93315944722e83a745df09b20b480ff145073f954541fa",
+   "depth": 7,
+   "fqn": "user.base_url",
+   "origin": "user",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 333,
+   "inclusive_ns": 3526094,
+   "self_ns": 435002,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "87d0b77794dcd4c68b5357a2530be10129d6b6d928f54f4a3f15eb90aa3f5b14",
+   "parent_call_path_id": "489dff61ed28a0b64f1039585276583723cabadde3b78d6a7c4516d04f00d922",
+   "depth": 7,
+   "fqn": "baml.json.from_string",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 443,
+   "inclusive_ns": 3332750,
+   "self_ns": 3332750,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "0ee404ce5d2b65b0b165dfcec23467f4fe83df12bfd39f1923104e026a646198",
+   "parent_call_path_id": "6fbdff619329d5741e1120e101035afb9e8fec18f04e47de908717ffd49b1224",
+   "depth": 7,
+   "fqn": "baml.String.from",
+   "origin": "builtin",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 224,
+   "inclusive_ns": 3042873,
+   "self_ns": 1854873,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "d6499c88491aad8cd749bef20df6deb445ef87d3773b32d2602058b806ebb816",
+   "parent_call_path_id": "6fbdff619329d5741e1120e101035afb9e8fec18f04e47de908717ffd49b1224",
+   "depth": 7,
+   "fqn": "user.base_url",
+   "origin": "user",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 112,
+   "inclusive_ns": 1184041,
+   "self_ns": 153131,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "b89c51d39091951d903bfb9127b0557e17af0e6c0e1da602c8e171084dbf160b",
+   "parent_call_path_id": "00a350d974c55a855e916fd74482cd16969d675ae2fd4815d512e7fe28fa62c1",
+   "depth": 7,
+   "fqn": "baml.http.Response.ok",
+   "origin": "builtin",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 866,
+   "inclusive_ns": 1066562,
+   "self_ns": 1066562,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "1442ae45dd0ad5f8118470424256323abd9671b36bb4c49203cbe8b3526d5310",
+   "parent_call_path_id": "c48c92751522d76af6094dae1e505e32fbf9298b40922a1499ac315acf1a304c",
+   "depth": 7,
+   "fqn": "baml.http.Response.ok",
+   "origin": "builtin",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 902,
+   "inclusive_ns": 954532,
+   "self_ns": 954532,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "8c3db462a93a74c12e68405b6dbc1852db504810b32d31b12c940ff7d0e093ac",
+   "parent_call_path_id": "6fbdff619329d5741e1120e101035afb9e8fec18f04e47de908717ffd49b1224",
+   "depth": 7,
+   "fqn": "baml.json.from_string",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 112,
+   "inclusive_ns": 762369,
+   "self_ns": 762369,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "bcc954e916aac8e16043f10f1ad80c2c8724da1cf0501190904cf9c6b0eaad1a",
+   "parent_call_path_id": "489dff61ed28a0b64f1039585276583723cabadde3b78d6a7c4516d04f00d922",
+   "depth": 7,
+   "fqn": "baml.http.Response.ok",
+   "origin": "builtin",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 416,
+   "inclusive_ns": 381706,
+   "self_ns": 381706,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "81b0658b819cb7b7b8229e417d7bece3d2740d37211b1f065334e5253611c9fc",
+   "parent_call_path_id": "e338484ca3e5b9b25a93315944722e83a745df09b20b480ff145073f954541fa",
+   "depth": 7,
+   "fqn": "baml.http.Response.ok",
+   "origin": "builtin",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 315,
+   "inclusive_ns": 323494,
+   "self_ns": 323494,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "e6d486247ccd03492b2b5f8d2e96187d4a47d6ca78a0de230849d4d60195b607",
+   "parent_call_path_id": "6fbdff619329d5741e1120e101035afb9e8fec18f04e47de908717ffd49b1224",
+   "depth": 7,
+   "fqn": "baml.http.Response.ok",
+   "origin": "builtin",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 108,
+   "inclusive_ns": 89670,
+   "self_ns": 89670,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "819bdd68025a4d812f6c8d5d7ff2e9b353db9bd5e2c6145a62872186592aae3d",
+   "parent_call_path_id": "57deb9afacf46d79993eee11176979512d30b90f56fbda28434135508284b9b3",
+   "depth": 7,
+   "fqn": "baml.http.Response.text",
+   "origin": "builtin",
+   "kind": "sysop",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 57208,
+   "self_ns": 4250,
+   "await_ns": 52958
+  },
+  {
+   "call_path_id": "d522258cfb672c6a043d1d7531107231735d3fa5c357bdc31decd70d805714b3",
+   "parent_call_path_id": "27685e295d8ff4cce6cee3db605033d6f749612b1721b16ef7a9efd1697fdf7e",
+   "depth": 7,
+   "fqn": "baml.json.to_string",
+   "origin": "builtin",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 19750,
+   "self_ns": 459,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "e9fac66959b0ec82b7824810a62c5af8f1c4be8b27aaa75585c7ab1c0daabed8",
+   "parent_call_path_id": "57deb9afacf46d79993eee11176979512d30b90f56fbda28434135508284b9b3",
+   "depth": 7,
+   "fqn": "baml.json.to_string",
+   "origin": "builtin",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 17250,
+   "self_ns": 417,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "618be195be360d1e010574c6ac48789243f5f869d8a8ce1f01279c8b60f0cfbd",
+   "parent_call_path_id": "27685e295d8ff4cce6cee3db605033d6f749612b1721b16ef7a9efd1697fdf7e",
+   "depth": 7,
+   "fqn": "baml.String.from",
+   "origin": "builtin",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 2,
+   "inclusive_ns": 16874,
+   "self_ns": 11083,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "09f1533980177d5d5248bac5b1f4431fa1b9f9ab8d93844d4f12887ad70f7076",
+   "parent_call_path_id": "c4ed254ed6f58989bbabc84162ba0c036e3f2048232d558201201988b17a6c2a",
+   "depth": 7,
+   "fqn": "baml.String.from",
+   "origin": "builtin",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 2,
+   "inclusive_ns": 14916,
+   "self_ns": 8750,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "1c393b86b2cced77059491acffcce75d4aca14fd58132b566a00569e1e28697a",
+   "parent_call_path_id": "57deb9afacf46d79993eee11176979512d30b90f56fbda28434135508284b9b3",
+   "depth": 7,
+   "fqn": "baml.String.from",
+   "origin": "builtin",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 2,
+   "inclusive_ns": 14541,
+   "self_ns": 8790,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "dbdd3251c1add143b31c519f3180bbdd5e978c17d3601ee8916770173f1a6d17",
+   "parent_call_path_id": "57deb9afacf46d79993eee11176979512d30b90f56fbda28434135508284b9b3",
+   "depth": 7,
+   "fqn": "user.base_url",
+   "origin": "user",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 14375,
+   "self_ns": 1208,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "d87d4e86c4794ae8d6ac87f44889e37629969ac382e0b75170becc273b5e53de",
+   "parent_call_path_id": "c4ed254ed6f58989bbabc84162ba0c036e3f2048232d558201201988b17a6c2a",
+   "depth": 7,
+   "fqn": "baml.json.to_string",
+   "origin": "builtin",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 13541,
+   "self_ns": 874,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "650726ba8d11e1abb6cab93f8f2b8d55efcbabff3bdd5ebb0a459b904b3935b4",
+   "parent_call_path_id": "c4ed254ed6f58989bbabc84162ba0c036e3f2048232d558201201988b17a6c2a",
+   "depth": 7,
+   "fqn": "baml.http.Response.text",
+   "origin": "builtin",
+   "kind": "sysop",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 10125,
+   "self_ns": 8083,
+   "await_ns": 2042
+  },
+  {
+   "call_path_id": "3ec7ed07ea84a4cde230f35403a95e25e62e93a3943c27a4232f998f37ba2049",
+   "parent_call_path_id": "27685e295d8ff4cce6cee3db605033d6f749612b1721b16ef7a9efd1697fdf7e",
+   "depth": 7,
+   "fqn": "baml.http.Response.text",
+   "origin": "builtin",
+   "kind": "sysop",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 8541,
+   "self_ns": 6541,
+   "await_ns": 2000
+  },
+  {
+   "call_path_id": "904a7c858aee081c85ae439a6eb862fd2f28e6d19b7e78a706a8cb6ba8f07274",
+   "parent_call_path_id": "57deb9afacf46d79993eee11176979512d30b90f56fbda28434135508284b9b3",
+   "depth": 7,
+   "fqn": "baml.json.from_string",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 8208,
+   "self_ns": 8208,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "c3cf09f689c997e6978c6a671119e1e5b2b62e13b10fda671919630eb5ed58d8",
+   "parent_call_path_id": "c4ed254ed6f58989bbabc84162ba0c036e3f2048232d558201201988b17a6c2a",
+   "depth": 7,
+   "fqn": "user.base_url",
+   "origin": "user",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 4875,
+   "self_ns": 875,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "77146779e396cade221cbc33e87190ff4f8edda5376e2e17030a2f05370e282f",
+   "parent_call_path_id": "27685e295d8ff4cce6cee3db605033d6f749612b1721b16ef7a9efd1697fdf7e",
+   "depth": 7,
+   "fqn": "user.base_url",
+   "origin": "user",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 4458,
+   "self_ns": 667,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "2490f70d22cda01230ae93e73cd843988c99a9b86a8a3b6b6a2b91910be49dda",
+   "parent_call_path_id": "c4ed254ed6f58989bbabc84162ba0c036e3f2048232d558201201988b17a6c2a",
+   "depth": 7,
+   "fqn": "baml.json.from_string",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 3125,
+   "self_ns": 3125,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "d980f7fdacfcc7b2492fdcce31b65a9614ed90a94ecdf6ae29aa492af8d6dec6",
+   "parent_call_path_id": "27685e295d8ff4cce6cee3db605033d6f749612b1721b16ef7a9efd1697fdf7e",
+   "depth": 7,
+   "fqn": "baml.json.from_string",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 3000,
+   "self_ns": 3000,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "dffe7ee048c147cc57ee245300b2e99844597964f30db1aeb1494e0f335985d4",
+   "parent_call_path_id": "c4ed254ed6f58989bbabc84162ba0c036e3f2048232d558201201988b17a6c2a",
+   "depth": 7,
+   "fqn": "baml.http.Response.ok",
+   "origin": "builtin",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 375,
+   "self_ns": 375,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "30841e717dc7c305ada0055284636c7662f4609bd221f23f675dd754db339016",
+   "parent_call_path_id": "27685e295d8ff4cce6cee3db605033d6f749612b1721b16ef7a9efd1697fdf7e",
+   "depth": 7,
+   "fqn": "baml.http.Response.ok",
+   "origin": "builtin",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 250,
+   "self_ns": 250,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "c5d44df2bf2c5d5cc14ff4bdf1939aebb8e55e421807f80c2554e9feb9aa0140",
+   "parent_call_path_id": "57deb9afacf46d79993eee11176979512d30b90f56fbda28434135508284b9b3",
+   "depth": 7,
+   "fqn": "baml.http.Response.ok",
+   "origin": "builtin",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 209,
+   "self_ns": 209,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "4fb8b3c099b5375f1d921008715513f439d3344e3196a2c435b0237703b3e11b",
+   "parent_call_path_id": "7c309af0ee66cfd42009eb46e858f1d2b09160514fe596de3735d586e67332e7",
+   "depth": 8,
+   "fqn": "baml.http._send",
+   "origin": "builtin",
+   "kind": "sysop",
+   "edge_kind": "call",
+   "calls_started": 961,
+   "inclusive_ns": 42771810008,
+   "self_ns": 6807462,
+   "await_ns": 42765002546
+  },
+  {
+   "call_path_id": "9418a1cf4fb31585cb68609b9bb5898ade4e6cc4dc920e98c511c81e6e3fc640",
+   "parent_call_path_id": "6497b724e243c5f5874ed428ce8cd6a81d7c300fd8e6fbc6490fb1a2d5434c68",
+   "depth": 8,
+   "fqn": "baml.http.send",
+   "origin": "builtin",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 928,
+   "inclusive_ns": 27503572113,
+   "self_ns": 17087428,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "8c8c02e38d78fce316c4c88a7c2a216c7979ffd879f25e10564d93fe67a13c4e",
+   "parent_call_path_id": "07027103ea5fe012aab4f4710634e37ea3cafec582db99b666daae4f6dc4e634",
+   "depth": 8,
+   "fqn": "baml.http._send",
+   "origin": "builtin",
+   "kind": "sysop",
+   "edge_kind": "call",
+   "calls_started": 926,
+   "inclusive_ns": 17515542286,
+   "self_ns": 7110343,
+   "await_ns": 17508431943
+  },
+  {
+   "call_path_id": "b5a4003ce4f6b70791541a40647540aec53d10e5bb1edd0ba31212326051d58c",
+   "parent_call_path_id": "ec9834cbe64ab483b901c0b39030941a4cdd7508ef051686879811389f8e757f",
+   "depth": 8,
+   "fqn": "baml.http.send",
+   "origin": "builtin",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 152,
+   "inclusive_ns": 9827574587,
+   "self_ns": 2773370,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "3b54a028b704c8e04d92e960de00fc889410dc31d9137e1764b78a6ab05ad1fa",
+   "parent_call_path_id": "6da7242040a25af03a0ad4254013f16f686d16e471047a5fdc2a4e08b2a7e094",
+   "depth": 8,
+   "fqn": "baml.http.send",
+   "origin": "builtin",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 998,
+   "inclusive_ns": 7248480557,
+   "self_ns": 18539061,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "b05f0ad67f6088fd777593e67c04f867aa2e892e7c3193ab257000d8ecb4fac0",
+   "parent_call_path_id": "076cd356b6635edeaa44a9f24f0c9c44057873a5bc08a84c3000842299c3f555",
+   "depth": 8,
+   "fqn": "baml.http._send",
+   "origin": "builtin",
+   "kind": "sysop",
+   "edge_kind": "call",
+   "calls_started": 443,
+   "inclusive_ns": 5736865215,
+   "self_ns": 3279345,
+   "await_ns": 5733585870
+  },
+  {
+   "call_path_id": "ffe39906393060dafc14914c1969abcd8828acd48b3d41c39949e569b20e0124",
+   "parent_call_path_id": "b683ed3ed90b3c3b5266721f6ae3e21eeec5748fd5208f46c904ceb242864790",
+   "depth": 8,
+   "fqn": "baml.http._send",
+   "origin": "builtin",
+   "kind": "sysop",
+   "edge_kind": "call",
+   "calls_started": 333,
+   "inclusive_ns": 4320902361,
+   "self_ns": 3589273,
+   "await_ns": 4317313088
+  },
+  {
+   "call_path_id": "8044077d7d1481bed0dfbed22eda8adbc5f4e76222bf3c52fca4b29d6f434a86",
+   "parent_call_path_id": "6fdf074a5156817b0a06ecebc6eaf997e25f394803c18e159ffab7add073205f",
+   "depth": 8,
+   "fqn": "baml.http._send",
+   "origin": "builtin",
+   "kind": "sysop",
+   "edge_kind": "call",
+   "calls_started": 112,
+   "inclusive_ns": 1445272460,
+   "self_ns": 800957,
+   "await_ns": 1444471503
+  },
+  {
+   "call_path_id": "34f3dd729d6f9ea039fb5906dac4fdfccf36afed6e547d0844d447f0d3f89a80",
+   "parent_call_path_id": "6da7242040a25af03a0ad4254013f16f686d16e471047a5fdc2a4e08b2a7e094",
+   "depth": 8,
+   "fqn": "baml.http.Response.text",
+   "origin": "builtin",
+   "kind": "sysop",
+   "edge_kind": "call",
+   "calls_started": 917,
+   "inclusive_ns": 58997850,
+   "self_ns": 11443626,
+   "await_ns": 47554224
+  },
+  {
+   "call_path_id": "001b065b39bcdf6bee4232d02a2aa41dd93d64e99a949e10935b47b2a394deb5",
+   "parent_call_path_id": "879d251ed383ecc802bed3d4ca13f09758b320744dc4d80004fdc22623b0cfb7",
+   "depth": 8,
+   "fqn": "baml.http._send",
+   "origin": "builtin",
+   "kind": "sysop",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 45639792,
+   "self_ns": 8542,
+   "await_ns": 45631250
+  },
+  {
+   "call_path_id": "e5a00d1e26e3028fe5e1ed684b30189f23c53a07b0c9ad0cf4c5aeb6f29362e4",
+   "parent_call_path_id": "6497b724e243c5f5874ed428ce8cd6a81d7c300fd8e6fbc6490fb1a2d5434c68",
+   "depth": 8,
+   "fqn": "baml.http.Response.text",
+   "origin": "builtin",
+   "kind": "sysop",
+   "edge_kind": "call",
+   "calls_started": 750,
+   "inclusive_ns": 43365287,
+   "self_ns": 9103923,
+   "await_ns": 34261364
+  },
+  {
+   "call_path_id": "9ea3da11026cc9f8b4ac30eecc69623ee098eb9aa79b8132e23232fca277ba37",
+   "parent_call_path_id": "ed2ed5456150add18d4f7be587efa800bf6a1132602dfbe69fbd449dfec2c345",
+   "depth": 8,
+   "fqn": "baml.http.send",
+   "origin": "builtin",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 39665708,
+   "self_ns": 48791,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "cd329d12411ab507802777c11fff21b3ad13c8a58a1bcf3ef82672c8d06ca334",
+   "parent_call_path_id": "6da7242040a25af03a0ad4254013f16f686d16e471047a5fdc2a4e08b2a7e094",
+   "depth": 8,
+   "fqn": "baml.String.from",
+   "origin": "builtin",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 1996,
+   "inclusive_ns": 29204297,
+   "self_ns": 18213719,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "dd73d0e844a238db741d11dee6d197218301fc12edd5bad7c607ff3c7a42cc13",
+   "parent_call_path_id": "c7320e26c900a6555c31fb92a017b09babc368ed0f04226d73ca692c41d05101",
+   "depth": 8,
+   "fqn": "baml.http.send",
+   "origin": "builtin",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 29200250,
+   "self_ns": 10875,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "c4106eb7a018fbc2427eb55250fd319accc5ff6115b7bbf53c6b10e6cad012a0",
+   "parent_call_path_id": "a3b770cf5b3c0e57b17887470c1ec2fd2556e09f7296ed893510e508d9717929",
+   "depth": 8,
+   "fqn": "baml.json.to_json",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 961,
+   "inclusive_ns": 27631179,
+   "self_ns": 27631179,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "992d3a93bfa63ef88da7a9d192fd4cc2ace8c04f850a9c5e852e65a038f0bafe",
+   "parent_call_path_id": "6497b724e243c5f5874ed428ce8cd6a81d7c300fd8e6fbc6490fb1a2d5434c68",
+   "depth": 8,
+   "fqn": "baml.String.from",
+   "origin": "builtin",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 1856,
+   "inclusive_ns": 26223956,
+   "self_ns": 16245597,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "09d690452bb50d758a327d037ec87ecdff4fae0fdb94daa7233b1d8b40209d77",
+   "parent_call_path_id": "6497b724e243c5f5874ed428ce8cd6a81d7c300fd8e6fbc6490fb1a2d5434c68",
+   "depth": 8,
+   "fqn": "baml.json.to_string",
+   "origin": "builtin",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 928,
+   "inclusive_ns": 23966888,
+   "self_ns": 1256892,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "dc20ee6c3255314e47e8592b8b8726c8d3647c95c04f45794ba424b43f15a4fd",
+   "parent_call_path_id": "9b90bf9cb6e5fa953003a085f540a54cbbffd8878dd0fa0189f1cfdf4838cdae",
+   "depth": 8,
+   "fqn": "baml.http._send",
+   "origin": "builtin",
+   "kind": "sysop",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 21804875,
+   "self_ns": 4167,
+   "await_ns": 21800708
+  },
+  {
+   "call_path_id": "87973f3cda72b860b859be68909a8247d643240a5e1b070517a8fe2e57c87fc8",
+   "parent_call_path_id": "6da7242040a25af03a0ad4254013f16f686d16e471047a5fdc2a4e08b2a7e094",
+   "depth": 8,
+   "fqn": "baml.json.to_string",
+   "origin": "builtin",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 998,
+   "inclusive_ns": 19014550,
+   "self_ns": 1091320,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "6701a7291e3b764aad536eeb9d76cbc25a982b860a6568a1957be2eacc7b45e3",
+   "parent_call_path_id": "4f6d6417fd8ecd523478d2d09705ce47e004587e60bc62e1815926b51d25334c",
+   "depth": 8,
+   "fqn": "baml.json.to_json",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 926,
+   "inclusive_ns": 14739667,
+   "self_ns": 14739667,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "f104a71ebf102649289810f86c899ae7327749ec4d9312d9cbeaa0fce0f5225e",
+   "parent_call_path_id": "76df32a8ce2bc3ac63850549229ac4fc765988c2dffcf20806fcfeb50b5ae7e3",
+   "depth": 8,
+   "fqn": "baml.http._send",
+   "origin": "builtin",
+   "kind": "sysop",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 12860875,
+   "self_ns": 3083,
+   "await_ns": 12857792
+  },
+  {
+   "call_path_id": "a7ac57c3a9f9711b38abcc88709ee6a45398276d6cb9fbf615f4774334cb2bc9",
+   "parent_call_path_id": "cb02cf55ce8154931492731853c59f1278860bc4887f91f1509741ab93415375",
+   "depth": 8,
+   "fqn": "baml.json.to_json",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 443,
+   "inclusive_ns": 11855623,
+   "self_ns": 11855623,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "627b409bf7ff34f3a5c780ac1282ef63f6ec93526f7ed17de7e23fee1a12e872",
+   "parent_call_path_id": "f0c68ddc258cb210d3535c00d0c79122237314beb8d6f69a936c52a5746fa238",
+   "depth": 8,
+   "fqn": "baml._to_string_default",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 1922,
+   "inclusive_ns": 10096679,
+   "self_ns": 10096679,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "c173377fd770a36e3b80a4780fee953633e0cee0b49f0c89ccd412056033379b",
+   "parent_call_path_id": "331b0de4d120ea25eb3a7aeba7b2b7bf93c3ef81ef438bd64e4f6a21cceb1836",
+   "depth": 8,
+   "fqn": "baml._to_string_default",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 1852,
+   "inclusive_ns": 9706757,
+   "self_ns": 9706757,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "2ae0f664d7b3c91f3dde2ba567dd2e1ac4831c7bf96cbb320b864fb1f30f1e8f",
+   "parent_call_path_id": "36176aa268af5cdf1b83b7623bfaa36b4051b8eb8919ec9ac5be8b225a60c87d",
+   "depth": 8,
+   "fqn": "baml.json.to_json",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 333,
+   "inclusive_ns": 9641172,
+   "self_ns": 9641172,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "e2ff1e96e7f28a7c1c04c7000689ed883e59d7c7c72030e8841f4ce303fe01bb",
+   "parent_call_path_id": "6497b724e243c5f5874ed428ce8cd6a81d7c300fd8e6fbc6490fb1a2d5434c68",
+   "depth": 8,
+   "fqn": "user.base_url",
+   "origin": "user",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 928,
+   "inclusive_ns": 9051006,
+   "self_ns": 1387392,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "0491e12f8583c14bff2a7eff3c036ec6bed25be777a5b15de9bae1b62967414e",
+   "parent_call_path_id": "6497b724e243c5f5874ed428ce8cd6a81d7c300fd8e6fbc6490fb1a2d5434c68",
+   "depth": 8,
+   "fqn": "baml.http.Response.text",
+   "origin": "builtin",
+   "kind": "sysop",
+   "edge_kind": "call",
+   "calls_started": 112,
+   "inclusive_ns": 8525080,
+   "self_ns": 1515868,
+   "await_ns": 7009212
+  },
+  {
+   "call_path_id": "74e02274876151b4717cbe681b2fc02b6220f78f4b56284b5eccaf65512e73be",
+   "parent_call_path_id": "1395b7693b0c1218a460b00500616c47494633298fbabf604dab4767db05095b",
+   "depth": 8,
+   "fqn": "baml.env.get",
+   "origin": "builtin",
+   "kind": "sysop",
+   "edge_kind": "call",
+   "calls_started": 961,
+   "inclusive_ns": 8251932,
+   "self_ns": 8251932,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "6aa943756ad1870d79fa1632743600899ba26a3f6d4dacc69266a6f834a233c8",
+   "parent_call_path_id": "6da7242040a25af03a0ad4254013f16f686d16e471047a5fdc2a4e08b2a7e094",
+   "depth": 8,
+   "fqn": "baml.json.from_string",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 960,
+   "inclusive_ns": 8140154,
+   "self_ns": 8140154,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "c18c424b281ab8dd3ae2764c5e5f244c99e873025f1a34254238397697a2d730",
+   "parent_call_path_id": "872d0bcd725b165b398674166eb34e7dbe99609b8ea38b87084e0fa28cc964b4",
+   "depth": 8,
+   "fqn": "baml.env.get",
+   "origin": "builtin",
+   "kind": "sysop",
+   "edge_kind": "call",
+   "calls_started": 926,
+   "inclusive_ns": 7315219,
+   "self_ns": 7315219,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "118518e5ca1b49b27e46392e01849c31fb46d8050ca505d025b52c4771fef407",
+   "parent_call_path_id": "6da7242040a25af03a0ad4254013f16f686d16e471047a5fdc2a4e08b2a7e094",
+   "depth": 8,
+   "fqn": "user.base_url",
+   "origin": "user",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 998,
+   "inclusive_ns": 7151937,
+   "self_ns": 1667348,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "e0bf4c17c09b1081409577bd4c19de4b391cfa04e7d15f9b2a673c9ff4cd9597",
+   "parent_call_path_id": "ec9834cbe64ab483b901c0b39030941a4cdd7508ef051686879811389f8e757f",
+   "depth": 8,
+   "fqn": "baml.http.Response.text",
+   "origin": "builtin",
+   "kind": "sysop",
+   "edge_kind": "call",
+   "calls_started": 115,
+   "inclusive_ns": 6952789,
+   "self_ns": 1369169,
+   "await_ns": 5583620
+  },
+  {
+   "call_path_id": "906aee4792ff1b293c17c668056f62e37da90a60674a6d0c48b0a0b5a1b9ecac",
+   "parent_call_path_id": "6497b724e243c5f5874ed428ce8cd6a81d7c300fd8e6fbc6490fb1a2d5434c68",
+   "depth": 8,
+   "fqn": "baml.json.from_string",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 807,
+   "inclusive_ns": 6432504,
+   "self_ns": 6432504,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "b5763d02cd0b361a8d01d20c83612583b6db884386e45fc0e0c4b6298d145b5c",
+   "parent_call_path_id": "68ea7a212eba58c259c490f6f3d82268516eb68afe1d1a7f0789d9ca87364a36",
+   "depth": 8,
+   "fqn": "baml._to_string_default",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 886,
+   "inclusive_ns": 5274683,
+   "self_ns": 5274683,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "b646509d7f7ddd938163b83a66cfd8229f7176670d4cafe906407838029fabb8",
+   "parent_call_path_id": "ec9834cbe64ab483b901c0b39030941a4cdd7508ef051686879811389f8e757f",
+   "depth": 8,
+   "fqn": "baml.json.to_string",
+   "origin": "builtin",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 152,
+   "inclusive_ns": 4940327,
+   "self_ns": 158451,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "ccde5ff9c6bd9568c79bc43c9468c74b861deead3ec01c7a98b7814701d4b0ec",
+   "parent_call_path_id": "ec9834cbe64ab483b901c0b39030941a4cdd7508ef051686879811389f8e757f",
+   "depth": 8,
+   "fqn": "baml.String.from",
+   "origin": "builtin",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 304,
+   "inclusive_ns": 4041120,
+   "self_ns": 2490702,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "c2b83299afd09d64659c0d1ddc7f7821b52db16a4bf0720f65917c01670198a3",
+   "parent_call_path_id": "5806e39a218f11d5d45f47c02a0cd5dc9defd57e5d35d8e44d983b6d5cd069d3",
+   "depth": 8,
+   "fqn": "baml.env.get",
+   "origin": "builtin",
+   "kind": "sysop",
+   "edge_kind": "call",
+   "calls_started": 443,
+   "inclusive_ns": 3653955,
+   "self_ns": 3653955,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "923f254e9c4771a3fd1445ff6e0fdfe4b08ab0fee41bb2407519a9710b4afb51",
+   "parent_call_path_id": "2a7587d517731e1ea160938fcb21863a3de8def9822cdf7b8fc476f84e9252bb",
+   "depth": 8,
+   "fqn": "baml._to_string_default",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 666,
+   "inclusive_ns": 3421906,
+   "self_ns": 3421906,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "49b22954693dbee4b8b234f2348fc8d5c3b48a8555e74bdf9d879adae7762721",
+   "parent_call_path_id": "57637a9be863ce27df7d18de79739f9442163f30cda2e99034046b74e331b190",
+   "depth": 8,
+   "fqn": "baml.json.to_json",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 112,
+   "inclusive_ns": 3274795,
+   "self_ns": 3274795,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "8c0adcfc79f6ae859f507eac1704a74c235e7a85a161279ee361f39a895f9c84",
+   "parent_call_path_id": "126ef8e6253f3f800179b85f85723a37e1cbeaa3e3a28184846b9d3eeb4f91c2",
+   "depth": 8,
+   "fqn": "baml.env.get",
+   "origin": "builtin",
+   "kind": "sysop",
+   "edge_kind": "call",
+   "calls_started": 333,
+   "inclusive_ns": 3091092,
+   "self_ns": 3091092,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "ef153cb407bfe6c5e2b98748882c7a31e4d3c92c2db30cc67eec7cb159015706",
+   "parent_call_path_id": "a3b770cf5b3c0e57b17887470c1ec2fd2556e09f7296ed893510e508d9717929",
+   "depth": 8,
+   "fqn": "baml.json.stringify",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 961,
+   "inclusive_ns": 2908710,
+   "self_ns": 2908710,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "71fb46f423f896f091d660cc8bc22d2f3d1e8ed409ba7094204f398f204ac12b",
+   "parent_call_path_id": "6da7242040a25af03a0ad4254013f16f686d16e471047a5fdc2a4e08b2a7e094",
+   "depth": 8,
+   "fqn": "baml.http.Response.text",
+   "origin": "builtin",
+   "kind": "sysop",
+   "edge_kind": "call",
+   "calls_started": 35,
+   "inclusive_ns": 2707749,
+   "self_ns": 587206,
+   "await_ns": 2120543
+  },
+  {
+   "call_path_id": "c4aff6e17719f87c54adc469f1c68785338ed9bc04419094c6131ae6dc3521c3",
+   "parent_call_path_id": "4f6d6417fd8ecd523478d2d09705ce47e004587e60bc62e1815926b51d25334c",
+   "depth": 8,
+   "fqn": "baml.json.stringify",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 926,
+   "inclusive_ns": 2379435,
+   "self_ns": 2379435,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "ef11581b475ec3b66b8c34b8f570871437b8abeb701cd1d0223593fd4bc57945",
+   "parent_call_path_id": "ec9834cbe64ab483b901c0b39030941a4cdd7508ef051686879811389f8e757f",
+   "depth": 8,
+   "fqn": "user.base_url",
+   "origin": "user",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 152,
+   "inclusive_ns": 1554129,
+   "self_ns": 219466,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "97e2ab8ec899b94a67119a5dbabde10de69b7ee47285d54f1029cf8d23ff03db",
+   "parent_call_path_id": "cb02cf55ce8154931492731853c59f1278860bc4887f91f1509741ab93415375",
+   "depth": 8,
+   "fqn": "baml.json.stringify",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 443,
+   "inclusive_ns": 1330959,
+   "self_ns": 1330959,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "09d2598070a7c4efb9cabe8c5572c61007b415709476f151c1951b00729aba03",
+   "parent_call_path_id": "0ee404ce5d2b65b0b165dfcec23467f4fe83df12bfd39f1923104e026a646198",
+   "depth": 8,
+   "fqn": "baml._to_string_default",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 224,
+   "inclusive_ns": 1188000,
+   "self_ns": 1188000,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "c93ae0dc44f800ffc8482e588575b09dcdbf39b896bb2d427b2959643167d326",
+   "parent_call_path_id": "36176aa268af5cdf1b83b7623bfaa36b4051b8eb8919ec9ac5be8b225a60c87d",
+   "depth": 8,
+   "fqn": "baml.json.stringify",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 333,
+   "inclusive_ns": 1138708,
+   "self_ns": 1138708,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "1dce8334b366fef22c26390e497f7ad81f2e69686d5d4c53bb0ba92a2112adcb",
+   "parent_call_path_id": "ec9834cbe64ab483b901c0b39030941a4cdd7508ef051686879811389f8e757f",
+   "depth": 8,
+   "fqn": "baml.http.Response.text",
+   "origin": "builtin",
+   "kind": "sysop",
+   "edge_kind": "call",
+   "calls_started": 32,
+   "inclusive_ns": 1118875,
+   "self_ns": 337332,
+   "await_ns": 781543
+  },
+  {
+   "call_path_id": "a70e7471b36400f6418bea31bff62de3eb65a979858d49cd77c1309c5a286cd6",
+   "parent_call_path_id": "ec9834cbe64ab483b901c0b39030941a4cdd7508ef051686879811389f8e757f",
+   "depth": 8,
+   "fqn": "baml.json.from_string",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 119,
+   "inclusive_ns": 1053711,
+   "self_ns": 1053711,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "fb9486aa0a8158dc2ed5163131ca25cd3d410ea3ff49149848d943a3d7b39c01",
+   "parent_call_path_id": "d6499c88491aad8cd749bef20df6deb445ef87d3773b32d2602058b806ebb816",
+   "depth": 8,
+   "fqn": "baml.env.get",
+   "origin": "builtin",
+   "kind": "sysop",
+   "edge_kind": "call",
+   "calls_started": 112,
+   "inclusive_ns": 1030910,
+   "self_ns": 1030910,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "06b2625559b30be728030f21caae87c4d1e196035c283492b30d7844d5ea1a61",
+   "parent_call_path_id": "6da7242040a25af03a0ad4254013f16f686d16e471047a5fdc2a4e08b2a7e094",
+   "depth": 8,
+   "fqn": "baml.http.Response.ok",
+   "origin": "builtin",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 952,
+   "inclusive_ns": 903793,
+   "self_ns": 903793,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "c3693e20417cf490c817961b58195ad7903d10478c77e0987c3406fc350f54b9",
+   "parent_call_path_id": "6497b724e243c5f5874ed428ce8cd6a81d7c300fd8e6fbc6490fb1a2d5434c68",
+   "depth": 8,
+   "fqn": "baml.http.Response.ok",
+   "origin": "builtin",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 862,
+   "inclusive_ns": 834336,
+   "self_ns": 834336,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "ac441169be47fa71322ff5dae6de0b76480ecd81b2bb9e30d4ec42b5327d3133",
+   "parent_call_path_id": "7c309af0ee66cfd42009eb46e858f1d2b09160514fe596de3735d586e67332e7",
+   "depth": 8,
+   "fqn": "baml.http._timeout_nanos",
+   "origin": "builtin",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 961,
+   "inclusive_ns": 402135,
+   "self_ns": 402135,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "6f8e5408095839a79aa4713009d71e14086cd6d29ce6c2b6452429174f66bf1d",
+   "parent_call_path_id": "07027103ea5fe012aab4f4710634e37ea3cafec582db99b666daae4f6dc4e634",
+   "depth": 8,
+   "fqn": "baml.http._timeout_nanos",
+   "origin": "builtin",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 926,
+   "inclusive_ns": 360953,
+   "self_ns": 360953,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "56c487c833b8e2cc755f29fb8de7ffaf6f55408a52fa3526dd46e40b82eb3a29",
+   "parent_call_path_id": "57637a9be863ce27df7d18de79739f9442163f30cda2e99034046b74e331b190",
+   "depth": 8,
+   "fqn": "baml.json.stringify",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 112,
+   "inclusive_ns": 336423,
+   "self_ns": 336423,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "a09e2fc8e29a125c8a5da8529514db67c13d58296415152cf65f9321413e1d98",
+   "parent_call_path_id": "076cd356b6635edeaa44a9f24f0c9c44057873a5bc08a84c3000842299c3f555",
+   "depth": 8,
+   "fqn": "baml.http._timeout_nanos",
+   "origin": "builtin",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 443,
+   "inclusive_ns": 194506,
+   "self_ns": 194506,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "3eaa346cc02bfb862b660251ee5b7e620ac1308e5787436a1080713902528c93",
+   "parent_call_path_id": "b683ed3ed90b3c3b5266721f6ae3e21eeec5748fd5208f46c904ceb242864790",
+   "depth": 8,
+   "fqn": "baml.http._timeout_nanos",
+   "origin": "builtin",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 333,
+   "inclusive_ns": 140675,
+   "self_ns": 140675,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "7ec8929b1bdf67fc09aee4aec4e6019abe5addc4047d4861598640074ae60454",
+   "parent_call_path_id": "ec9834cbe64ab483b901c0b39030941a4cdd7508ef051686879811389f8e757f",
+   "depth": 8,
+   "fqn": "baml.http.Response.ok",
+   "origin": "builtin",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 147,
+   "inclusive_ns": 139493,
+   "self_ns": 139493,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "2622c94f796f805f7ae9b3891645b32d66f5b64d8c1531b2f0278badb2515454",
+   "parent_call_path_id": "6fdf074a5156817b0a06ecebc6eaf997e25f394803c18e159ffab7add073205f",
+   "depth": 8,
+   "fqn": "baml.http._timeout_nanos",
+   "origin": "builtin",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 112,
+   "inclusive_ns": 60711,
+   "self_ns": 60711,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "8e84477cc1db870e3f89ed1cddf3f32ba834c3f880ec59650e000776425b4922",
+   "parent_call_path_id": "ed2ed5456150add18d4f7be587efa800bf6a1132602dfbe69fbd449dfec2c345",
+   "depth": 8,
+   "fqn": "baml.String.from",
+   "origin": "builtin",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 2,
+   "inclusive_ns": 43416,
+   "self_ns": 38874,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "d8a5509df087e4cd3981904f81c5c39f17d28f11cb427b6b225b5a466d362181",
+   "parent_call_path_id": "ed2ed5456150add18d4f7be587efa800bf6a1132602dfbe69fbd449dfec2c345",
+   "depth": 8,
+   "fqn": "baml.json.to_string",
+   "origin": "builtin",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 40625,
+   "self_ns": 501,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "21268ea65a2f6f41ba5b5719f45b7e2551a10169b09aa5eb801db6359bf70cc5",
+   "parent_call_path_id": "ed2ed5456150add18d4f7be587efa800bf6a1132602dfbe69fbd449dfec2c345",
+   "depth": 8,
+   "fqn": "user.base_url",
+   "origin": "user",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 36875,
+   "self_ns": 3167,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "2c760ee0c6fb8d829987d314bc267769b1cc64f53326a585ac4b36c007915a8d",
+   "parent_call_path_id": "d522258cfb672c6a043d1d7531107231735d3fa5c357bdc31decd70d805714b3",
+   "depth": 8,
+   "fqn": "baml.json.to_json",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 17583,
+   "self_ns": 17583,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "5e1746125ee954f4d2915797c9ab6851d7ee4930449221e1bb07009067daee63",
+   "parent_call_path_id": "c7320e26c900a6555c31fb92a017b09babc368ed0f04226d73ca692c41d05101",
+   "depth": 8,
+   "fqn": "baml.String.from",
+   "origin": "builtin",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 2,
+   "inclusive_ns": 16083,
+   "self_ns": 9499,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "a020849af9d27fe76857ab819a4c72eaabd26541b81f3e55467e2bdf3e8ef6bb",
+   "parent_call_path_id": "c7320e26c900a6555c31fb92a017b09babc368ed0f04226d73ca692c41d05101",
+   "depth": 8,
+   "fqn": "baml.json.to_string",
+   "origin": "builtin",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 15417,
+   "self_ns": 958,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "f5104afc743d84841596fc445d03a52bfe39cbb3aa1e436d33c4b32a601b78b2",
+   "parent_call_path_id": "e9fac66959b0ec82b7824810a62c5af8f1c4be8b27aaa75585c7ab1c0daabed8",
+   "depth": 8,
+   "fqn": "baml.json.to_json",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 15291,
+   "self_ns": 15291,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "236705b2c85c38d3c3696b2a50a40824c111e9264b505c7884930373a368c552",
+   "parent_call_path_id": "dbdd3251c1add143b31c519f3180bbdd5e978c17d3601ee8916770173f1a6d17",
+   "depth": 8,
+   "fqn": "baml.env.get",
+   "origin": "builtin",
+   "kind": "sysop",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 13167,
+   "self_ns": 13167,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "9a8b5cfdcf7f16ab39fce851946533d024dedb902ea6c5c2d64a160eed0f3a02",
+   "parent_call_path_id": "c7320e26c900a6555c31fb92a017b09babc368ed0f04226d73ca692c41d05101",
+   "depth": 8,
+   "fqn": "baml.http.Response.text",
+   "origin": "builtin",
+   "kind": "sysop",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 11458,
+   "self_ns": 7958,
+   "await_ns": 3500
+  },
+  {
+   "call_path_id": "3bab95df246902e418be27bdc77cad3a769133013ecc1326b6ca1c7e0a1e4be2",
+   "parent_call_path_id": "d87d4e86c4794ae8d6ac87f44889e37629969ac382e0b75170becc273b5e53de",
+   "depth": 8,
+   "fqn": "baml.json.to_json",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 9917,
+   "self_ns": 9917,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "b942c740bcc1804c1e8cff099ec87e495bc098d636fa2c20a2fd6a72f4c2299c",
+   "parent_call_path_id": "ed2ed5456150add18d4f7be587efa800bf6a1132602dfbe69fbd449dfec2c345",
+   "depth": 8,
+   "fqn": "baml.http.Response.text",
+   "origin": "builtin",
+   "kind": "sysop",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 9208,
+   "self_ns": 5708,
+   "await_ns": 3500
+  },
+  {
+   "call_path_id": "f65c5abed1b81ea168f1d146c20a1f5cd75514fab2c6c3ca787afe4fce83e1e0",
+   "parent_call_path_id": "c7320e26c900a6555c31fb92a017b09babc368ed0f04226d73ca692c41d05101",
+   "depth": 8,
+   "fqn": "user.base_url",
+   "origin": "user",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 7584,
+   "self_ns": 1417,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "4780d9f7efe18d110ddecc2d88b629e5c00d7b71c6a4649f81b95baaf5989af6",
+   "parent_call_path_id": "09f1533980177d5d5248bac5b1f4431fa1b9f9ab8d93844d4f12887ad70f7076",
+   "depth": 8,
+   "fqn": "baml._to_string_default",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 2,
+   "inclusive_ns": 6166,
+   "self_ns": 6166,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "7f0728a0b57500aeacfddf041abb928eeeb369d811a567a76e0c19cf8f8c075d",
+   "parent_call_path_id": "618be195be360d1e010574c6ac48789243f5f869d8a8ce1f01279c8b60f0cfbd",
+   "depth": 8,
+   "fqn": "baml._to_string_default",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 2,
+   "inclusive_ns": 5791,
+   "self_ns": 5791,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "8e8dd8271ffaecd338001eeccb0f68c25e83d3aaaeb2429e38738826b2063aa6",
+   "parent_call_path_id": "1c393b86b2cced77059491acffcce75d4aca14fd58132b566a00569e1e28697a",
+   "depth": 8,
+   "fqn": "baml._to_string_default",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 2,
+   "inclusive_ns": 5751,
+   "self_ns": 5751,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "be906bf21bc688d25ee708c3c0376a78b13077a3038c018ac06772b6e04311f2",
+   "parent_call_path_id": "c7320e26c900a6555c31fb92a017b09babc368ed0f04226d73ca692c41d05101",
+   "depth": 8,
+   "fqn": "baml.json.from_string",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 4583,
+   "self_ns": 4583,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "e4e3422affe01677271bc270486345efa6e9768c46d39293f6c818284adec177",
+   "parent_call_path_id": "ed2ed5456150add18d4f7be587efa800bf6a1132602dfbe69fbd449dfec2c345",
+   "depth": 8,
+   "fqn": "baml.json.from_string",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 4083,
+   "self_ns": 4083,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "aaa5ca3cb22ece85b4340dd212bc650636952fb80b3ba3523e340dc366873220",
+   "parent_call_path_id": "c3cf09f689c997e6978c6a671119e1e5b2b62e13b10fda671919630eb5ed58d8",
+   "depth": 8,
+   "fqn": "baml.env.get",
+   "origin": "builtin",
+   "kind": "sysop",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 4000,
+   "self_ns": 4000,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "736d675fa7bbd43f02c23a9335224677bc17e62ffcecd744177cbdd818501823",
+   "parent_call_path_id": "77146779e396cade221cbc33e87190ff4f8edda5376e2e17030a2f05370e282f",
+   "depth": 8,
+   "fqn": "baml.env.get",
+   "origin": "builtin",
+   "kind": "sysop",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 3791,
+   "self_ns": 3791,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "f5419dda43924451022cf55b62dbe22f3f5d524c48895df76320f071c7cd39d8",
+   "parent_call_path_id": "d87d4e86c4794ae8d6ac87f44889e37629969ac382e0b75170becc273b5e53de",
+   "depth": 8,
+   "fqn": "baml.json.stringify",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 2750,
+   "self_ns": 2750,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "4c17c0505fdd6705802b64e1164221212b6c8a62a44c47de702c825f811e9bca",
+   "parent_call_path_id": "d522258cfb672c6a043d1d7531107231735d3fa5c357bdc31decd70d805714b3",
+   "depth": 8,
+   "fqn": "baml.json.stringify",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 1708,
+   "self_ns": 1708,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "a87490bddb041cbff9e6ee5a87d409e0af1d90b7568a324cfb6cfc8c36a71397",
+   "parent_call_path_id": "e9fac66959b0ec82b7824810a62c5af8f1c4be8b27aaa75585c7ab1c0daabed8",
+   "depth": 8,
+   "fqn": "baml.json.stringify",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 1542,
+   "self_ns": 1542,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "4c50167fa48622a59660d0d57fee90c85b31619f6b7ae460edb396cdf34c9982",
+   "parent_call_path_id": "c7320e26c900a6555c31fb92a017b09babc368ed0f04226d73ca692c41d05101",
+   "depth": 8,
+   "fqn": "baml.http.Response.ok",
+   "origin": "builtin",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 583,
+   "self_ns": 583,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "eaf45134a5883bd33bb09425ec8b732e8ccbf2e4c1aae88e984f95795bf40419",
+   "parent_call_path_id": "76df32a8ce2bc3ac63850549229ac4fc765988c2dffcf20806fcfeb50b5ae7e3",
+   "depth": 8,
+   "fqn": "baml.http._timeout_nanos",
+   "origin": "builtin",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 375,
+   "self_ns": 375,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "9b4a84dfbc33863ac159212a6207daffdb78a04e68996f58fd0ad13ac50e91f6",
+   "parent_call_path_id": "ed2ed5456150add18d4f7be587efa800bf6a1132602dfbe69fbd449dfec2c345",
+   "depth": 8,
+   "fqn": "baml.http.Response.ok",
+   "origin": "builtin",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 334,
+   "self_ns": 334,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "63f06e87c3485de5b0cb96be0fd763d5759a39e891ac38398705eb8e4e8461da",
+   "parent_call_path_id": "9b90bf9cb6e5fa953003a085f540a54cbbffd8878dd0fa0189f1cfdf4838cdae",
+   "depth": 8,
+   "fqn": "baml.http._timeout_nanos",
+   "origin": "builtin",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 250,
+   "self_ns": 250,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "87dd1c208f2b1c43aa73a6964445747b37a513e572b98268568a283c608a2680",
+   "parent_call_path_id": "879d251ed383ecc802bed3d4ca13f09758b320744dc4d80004fdc22623b0cfb7",
+   "depth": 8,
+   "fqn": "baml.http._timeout_nanos",
+   "origin": "builtin",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 208,
+   "self_ns": 208,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "736349512279f5819fe7310a2be02e022c017cab9f94832a847213b86627c385",
+   "parent_call_path_id": "9418a1cf4fb31585cb68609b9bb5898ade4e6cc4dc920e98c511c81e6e3fc640",
+   "depth": 9,
+   "fqn": "baml.http._send",
+   "origin": "builtin",
+   "kind": "sysop",
+   "edge_kind": "call",
+   "calls_started": 928,
+   "inclusive_ns": 27486129803,
+   "self_ns": 7413885,
+   "await_ns": 27478715918
+  },
+  {
+   "call_path_id": "bc2db4cbad63a42f4afe627a1c9b6f2aa56af227a834f52c353535d06bf8a2d7",
+   "parent_call_path_id": "b5a4003ce4f6b70791541a40647540aec53d10e5bb1edd0ba31212326051d58c",
+   "depth": 9,
+   "fqn": "baml.http._send",
+   "origin": "builtin",
+   "kind": "sysop",
+   "edge_kind": "call",
+   "calls_started": 152,
+   "inclusive_ns": 9824744418,
+   "self_ns": 1095374,
+   "await_ns": 9823649044
+  },
+  {
+   "call_path_id": "007280210576d91bceb5be340e874e849edb72a4d38a2e62dd9bac7430db8e07",
+   "parent_call_path_id": "3b54a028b704c8e04d92e960de00fc889410dc31d9137e1764b78a6ab05ad1fa",
+   "depth": 9,
+   "fqn": "baml.http._send",
+   "origin": "builtin",
+   "kind": "sysop",
+   "edge_kind": "call",
+   "calls_started": 998,
+   "inclusive_ns": 7229527248,
+   "self_ns": 11064885,
+   "await_ns": 7218462363
+  },
+  {
+   "call_path_id": "aca991be738cab30b88098d43b86e5449df2205ab9ebec1e98d0ac0fa061406e",
+   "parent_call_path_id": "9ea3da11026cc9f8b4ac30eecc69623ee098eb9aa79b8132e23232fca277ba37",
+   "depth": 9,
+   "fqn": "baml.http._send",
+   "origin": "builtin",
+   "kind": "sysop",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 39616667,
+   "self_ns": 40375,
+   "await_ns": 39576292
+  },
+  {
+   "call_path_id": "8e4d484adaabdfee2e2199b1e0127cf14163aad602865e51e65f798776d847e6",
+   "parent_call_path_id": "dd73d0e844a238db741d11dee6d197218301fc12edd5bad7c607ff3c7a42cc13",
+   "depth": 9,
+   "fqn": "baml.http._send",
+   "origin": "builtin",
+   "kind": "sysop",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 29189167,
+   "self_ns": 7084,
+   "await_ns": 29182083
+  },
+  {
+   "call_path_id": "e73c7093eb137839ef6bf704b34a8faa5b5c175d2026d1c84f1889f6e6008c94",
+   "parent_call_path_id": "09d690452bb50d758a327d037ec87ecdff4fae0fdb94daa7233b1d8b40209d77",
+   "depth": 9,
+   "fqn": "baml.json.to_json",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 928,
+   "inclusive_ns": 20376415,
+   "self_ns": 20376415,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "84af215d748ad22c9f5025a7c5c65a638a37e26c53e5b72841e0258627557691",
+   "parent_call_path_id": "87973f3cda72b860b859be68909a8247d643240a5e1b070517a8fe2e57c87fc8",
+   "depth": 9,
+   "fqn": "baml.json.to_json",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 998,
+   "inclusive_ns": 16130130,
+   "self_ns": 16130130,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "efb96cccd8adf5bef833694776be39200801b1690fd7605ada458fc03a684e8e",
+   "parent_call_path_id": "cd329d12411ab507802777c11fff21b3ad13c8a58a1bcf3ef82672c8d06ca334",
+   "depth": 9,
+   "fqn": "baml._to_string_default",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 1996,
+   "inclusive_ns": 10990578,
+   "self_ns": 10990578,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "626b2bd79113b69c29f83cf19831e48870969d15212424d8dfd2278cec9f224b",
+   "parent_call_path_id": "992d3a93bfa63ef88da7a9d192fd4cc2ace8c04f850a9c5e852e65a038f0bafe",
+   "depth": 9,
+   "fqn": "baml._to_string_default",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 1856,
+   "inclusive_ns": 9978359,
+   "self_ns": 9978359,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "4f38048b7043aea9cb02a357a5f9438d3c4f5f889cc07e24cde5c45a577262a6",
+   "parent_call_path_id": "e2ff1e96e7f28a7c1c04c7000689ed883e59d7c7c72030e8841f4ce303fe01bb",
+   "depth": 9,
+   "fqn": "baml.env.get",
+   "origin": "builtin",
+   "kind": "sysop",
+   "edge_kind": "call",
+   "calls_started": 928,
+   "inclusive_ns": 7663614,
+   "self_ns": 7663614,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "03e18160d5675942415978d1bb61b50ac5ff64f728156ed30d71fbe90cbc6cc6",
+   "parent_call_path_id": "118518e5ca1b49b27e46392e01849c31fb46d8050ca505d025b52c4771fef407",
+   "depth": 9,
+   "fqn": "baml.env.get",
+   "origin": "builtin",
+   "kind": "sysop",
+   "edge_kind": "call",
+   "calls_started": 998,
+   "inclusive_ns": 5484589,
+   "self_ns": 5484589,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "9df59fa620da74365c56210898a1ac15deb10104760d5eedd4286e70cf379a85",
+   "parent_call_path_id": "b646509d7f7ddd938163b83a66cfd8229f7176670d4cafe906407838029fabb8",
+   "depth": 9,
+   "fqn": "baml.json.to_json",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 152,
+   "inclusive_ns": 4307959,
+   "self_ns": 4307959,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "19bcaf757f0b4864da8ec60be8f6e5e5a5928afc634ff4ecc8813fa51547c197",
+   "parent_call_path_id": "09d690452bb50d758a327d037ec87ecdff4fae0fdb94daa7233b1d8b40209d77",
+   "depth": 9,
+   "fqn": "baml.json.stringify",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 928,
+   "inclusive_ns": 2333581,
+   "self_ns": 2333581,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "d7944ba9f8558fd423e18a549e84753e6c31b5402db3ac27545f709b72767d31",
+   "parent_call_path_id": "87973f3cda72b860b859be68909a8247d643240a5e1b070517a8fe2e57c87fc8",
+   "depth": 9,
+   "fqn": "baml.json.stringify",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 998,
+   "inclusive_ns": 1793100,
+   "self_ns": 1793100,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "3d6e51fc3c706ca73f51c49a58827bd104ba1750fb75c45fa67e06b45d308af9",
+   "parent_call_path_id": "ccde5ff9c6bd9568c79bc43c9468c74b861deead3ec01c7a98b7814701d4b0ec",
+   "depth": 9,
+   "fqn": "baml._to_string_default",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 304,
+   "inclusive_ns": 1550418,
+   "self_ns": 1550418,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "2838574b7d83ad7c855b5bfd456f2b63cee78bb9ff6eb902e05d623a97e56ed3",
+   "parent_call_path_id": "ef11581b475ec3b66b8c34b8f570871437b8abeb701cd1d0223593fd4bc57945",
+   "depth": 9,
+   "fqn": "baml.env.get",
+   "origin": "builtin",
+   "kind": "sysop",
+   "edge_kind": "call",
+   "calls_started": 152,
+   "inclusive_ns": 1334663,
+   "self_ns": 1334663,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "8630867f0567f6a2c7a7b5cfb20435691df8fcd8e21ff3776ab94a4968e32cb1",
+   "parent_call_path_id": "b646509d7f7ddd938163b83a66cfd8229f7176670d4cafe906407838029fabb8",
+   "depth": 9,
+   "fqn": "baml.json.stringify",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 152,
+   "inclusive_ns": 473917,
+   "self_ns": 473917,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "0da3e7a024429f01bed4d20c42fae9d22b2ad29c9eab015c9476defc4bc0c2db",
+   "parent_call_path_id": "3b54a028b704c8e04d92e960de00fc889410dc31d9137e1764b78a6ab05ad1fa",
+   "depth": 9,
+   "fqn": "baml.http._timeout_nanos",
+   "origin": "builtin",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 998,
+   "inclusive_ns": 414248,
+   "self_ns": 414248,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "52e56544d4ff5d92d0ff13e76a43ead5644329d987b11e8514c132afe872ce11",
+   "parent_call_path_id": "9418a1cf4fb31585cb68609b9bb5898ade4e6cc4dc920e98c511c81e6e3fc640",
+   "depth": 9,
+   "fqn": "baml.http._timeout_nanos",
+   "origin": "builtin",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 928,
+   "inclusive_ns": 354882,
+   "self_ns": 354882,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "3cd538d94bcd96fa2bc314faa6377fc57de17942d355749722478e39f0f41403",
+   "parent_call_path_id": "b5a4003ce4f6b70791541a40647540aec53d10e5bb1edd0ba31212326051d58c",
+   "depth": 9,
+   "fqn": "baml.http._timeout_nanos",
+   "origin": "builtin",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 152,
+   "inclusive_ns": 56799,
+   "self_ns": 56799,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "70ef291f606c99afab277baf5dc65f0cd6c13a382b11925d8a9dc5a26f44a9a3",
+   "parent_call_path_id": "21268ea65a2f6f41ba5b5719f45b7e2551a10169b09aa5eb801db6359bf70cc5",
+   "depth": 9,
+   "fqn": "baml.env.get",
+   "origin": "builtin",
+   "kind": "sysop",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 33708,
+   "self_ns": 33708,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "5010d38dca8d0285ab88b8c8f271864b74aed00c90d669df104cb5402c57b34f",
+   "parent_call_path_id": "d8a5509df087e4cd3981904f81c5c39f17d28f11cb427b6b225b5a466d362181",
+   "depth": 9,
+   "fqn": "baml.json.to_json",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 30458,
+   "self_ns": 30458,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "f538b86ce0da4a5c4c7af32dfcdfa9ffa71bce3b4b09f79e1c3dbb3d6b8328b0",
+   "parent_call_path_id": "a020849af9d27fe76857ab819a4c72eaabd26541b81f3e55467e2bdf3e8ef6bb",
+   "depth": 9,
+   "fqn": "baml.json.to_json",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 12917,
+   "self_ns": 12917,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "5644747f41b6411015aee9230e0eb6d2099a6d191326bfc1379b953f2cd5bd3d",
+   "parent_call_path_id": "d8a5509df087e4cd3981904f81c5c39f17d28f11cb427b6b225b5a466d362181",
+   "depth": 9,
+   "fqn": "baml.json.stringify",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 9666,
+   "self_ns": 9666,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "51ce8155397255a130d94654e09ae1964ab115d62322f2e0883f1d1ee644065a",
+   "parent_call_path_id": "5e1746125ee954f4d2915797c9ab6851d7ee4930449221e1bb07009067daee63",
+   "depth": 9,
+   "fqn": "baml._to_string_default",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 2,
+   "inclusive_ns": 6584,
+   "self_ns": 6584,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "a6a9643369bd47508d7beb11adccb52f8a9c4c31a565d32703f06085421ddd48",
+   "parent_call_path_id": "f65c5abed1b81ea168f1d146c20a1f5cd75514fab2c6c3ca787afe4fce83e1e0",
+   "depth": 9,
+   "fqn": "baml.env.get",
+   "origin": "builtin",
+   "kind": "sysop",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 6167,
+   "self_ns": 6167,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "66bf57908c022d77b3f1e738a7b8b56a2643a6c23ba31d9f53726acffe0cc06c",
+   "parent_call_path_id": "8e84477cc1db870e3f89ed1cddf3f32ba834c3f880ec59650e000776425b4922",
+   "depth": 9,
+   "fqn": "baml._to_string_default",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 2,
+   "inclusive_ns": 4542,
+   "self_ns": 4542,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "91adb97b1c3ec88519105fd9dd2a6cbdca9810fcb8f2f45c8e25692327c72208",
+   "parent_call_path_id": "a020849af9d27fe76857ab819a4c72eaabd26541b81f3e55467e2bdf3e8ef6bb",
+   "depth": 9,
+   "fqn": "baml.json.stringify",
+   "origin": "builtin",
+   "kind": "native_unresolved",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 1542,
+   "self_ns": 1542,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "09ae1f6038e8e1e1bf47756e3e28781204cd5e02b7f543b4f7981fb5e0e60faf",
+   "parent_call_path_id": "9ea3da11026cc9f8b4ac30eecc69623ee098eb9aa79b8132e23232fca277ba37",
+   "depth": 9,
+   "fqn": "baml.http._timeout_nanos",
+   "origin": "builtin",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 250,
+   "self_ns": 250,
+   "await_ns": 0
+  },
+  {
+   "call_path_id": "8889d92043897b5efbf59ab15b8f88a2f6701996c0ee3e4ad3d8c244a1415a5e",
+   "parent_call_path_id": "dd73d0e844a238db741d11dee6d197218301fc12edd5bad7c607ff3c7a42cc13",
+   "depth": 9,
+   "fqn": "baml.http._timeout_nanos",
+   "origin": "builtin",
+   "kind": "bytecode",
+   "edge_kind": "call",
+   "calls_started": 1,
+   "inclusive_ns": 208,
+   "self_ns": 208,
+   "await_ns": 0
+  }
+ ]
+};
+
+// ---------------------------------------------------------------- helpers
+const NS = "http://www.w3.org/2000/svg";
+const el = (tag, attrs = {}, text) => {
+  const n = document.createElementNS(NS, tag);
+  for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, v);
+  if (text !== undefined) n.textContent = text;
+  return n;
+};
+const svg = (w, h) => el("svg", { viewBox: `0 0 ${w} ${h}`, width: w, height: h, role: "img" });
+const fmt = (n) => n.toLocaleString("en-US");
+const step = (fqn) => fqn.replace(/^user\./, "");
+const tip = document.getElementById("tip");
+function hover(node, text) {
+  node.addEventListener("mousemove", (e) => {
+    tip.textContent = text; tip.classList.add("on");
+    tip.style.left = (e.clientX + 14) + "px"; tip.style.top = (e.clientY + 14) + "px";
+  });
+  node.addEventListener("mouseleave", () => tip.classList.remove("on"));
+}
+
+// Horizontal bars with a hit area, value at the tip, optional secondary label.
+function hbars(rows, { width = 1040, labelW = 170, right = 120, barCls = () => "bar", max, tipText, valueText, noteText }) {
+  const rowH = 30, barH = 20, top = 6;
+  const h = top + rows.length * rowH + 6;
+  const s = svg(width, h);
+  const plotW = width - labelW - right;
+  const scale = (v) => plotW * v / max;
+  rows.forEach((r, i) => {
+    const y = top + i * rowH;
+    s.append(el("text", { x: labelW - 12, y: y + barH / 2 + 4, "text-anchor": "end", class: "strong" }, r.label));
+    const hit = el("rect", { x: labelW, y, width: plotW + right, height: rowH, class: "hit" });
+    const w = Math.max(scale(r.value), 0);
+    const p = el("path", { class: barCls(r), d: roundedRight(labelW, y + (rowH - barH) / 2, w, barH, 4) });
+    s.append(hit, p);
+    s.append(el("text", { x: labelW + w + 8, y: y + barH / 2 + 4, class: "num" }, valueText(r)));
+    if (noteText) s.append(el("text", { x: labelW + w + 8 + 70, y: y + barH / 2 + 4, class: "faint" }, noteText(r)));
+    hover(hit, tipText(r));
+  });
+  return s;
+}
+function roundedRight(x, y, w, h, r) {
+  r = Math.min(r, w);
+  return `M${x},${y} h${w - r} a${r},${r} 0 0 1 ${r},${r} v${h - 2 * r} a${r},${r} 0 0 1 -${r},${r} h-${w - r} z`;
+}
+
+// ---------------------------------------------------------------- run meta + KPIs
+{
+  const run = DATA.run;
+  const secs = (run.duration_ns / 1e9).toFixed(1);
+  document.getElementById("runmeta").innerHTML =
+    `<span>execution <b>…${run.execution_id.slice(14, 26)}</b></span>` +
+    `<span>started <b>${run.started_at.replace(/\.\d+Z$/, " UTC")}</b></span>` +
+    `<span>wall <b>${secs}s</b></span>` +
+    `<span>calls <b>${fmt(run.total_calls)}</b> · retained with values <b>${fmt(run.calls_retained)}</b></span>` +
+    `<span>threads <b>${fmt(run.threads_total)}</b></span>`;
+
+  const root = DATA.funnel.find((r) => r.step === "user.process_address");
+  const total = root.calls, completed = root.ok, dropped = root.errored;
+  const scored = DATA.accuracy.reduce((a, r) => ({ n: a.n + r.addresses, c: a.c + r.correct }), { n: 0, c: 0 });
+  const acc = (100 * scored.c / scored.n).toFixed(1);
+  const kpis = [
+    ["Addresses", fmt(total), "in data/addresses.csv"],
+    ["Completed", fmt(completed), `${(100 * completed / total).toFixed(1)}% coverage`],
+    ["Classification accuracy", `${acc}%`, `${fmt(scored.c)} of ${fmt(scored.n)} completed`],
+    ["Dropped", fmt(dropped), DATA.dropouts.map((d) => `${d.stage} ${d.addresses}`).join(" · ")],
+  ];
+  document.getElementById("kpis").innerHTML = kpis.map(([l, v, n]) =>
+    `<div class="kpi"><span class="label">${l}</span><span class="value">${v}</span><span class="note">${n}</span></div>`).join("");
+}
+
+
+// ---------------------------------------------------------------- flow (sankey)
+{
+  const e = Object.fromEntries(DATA.flow.map((r) => [r.edge, r.addresses]));
+  const total = DATA.funnel.find((r) => r.step === "user.process_address").calls;
+  // Columns are pipeline stages; a node's height is the addresses passing through it.
+  const nodes = {
+    addresses: { col: 0, label: "addresses" },
+    parse:     { col: 1, label: "parse" },
+    geocode:   { col: 2, label: "geocode" },
+    fallback:  { col: 3, label: "fallback geocoder" },
+    zoning:    { col: 4, label: "parcel found" },
+    noparcel:  { col: 4, label: "no parcel" },
+    classify:  { col: 5, label: "classify" },
+    res:       { col: 6, label: "enrich residential" },
+    com:       { col: 6, label: "enrich commercial" },
+    ind:       { col: 6, label: "enrich industrial" },
+    done:      { col: 7, label: "BuildingRecord", end: true },
+    d_parse:   { col: 2, label: "unparseable", drop: true },
+    d_geo:     { col: 4, label: "no geocode match", drop: true },
+    d_review:  { col: 6, label: "needs review", drop: true },
+  };
+  const links = [
+    ["addresses", "parse", total],
+    ["parse", "geocode", e.parsed], ["parse", "d_parse", e.unparseable],
+    ["geocode", "zoning", e.geocode_confident * e.parcel_found / (e.parcel_found + e.parcel_none)],
+    ["geocode", "noparcel", e.geocode_confident * e.parcel_none / (e.parcel_found + e.parcel_none)],
+    ["geocode", "fallback", e.geocode_low],
+    ["fallback", "zoning", e.fallback_matched * e.parcel_found / (e.parcel_found + e.parcel_none)],
+    ["fallback", "noparcel", e.fallback_matched * e.parcel_none / (e.parcel_found + e.parcel_none)],
+    ["fallback", "d_geo", e.fallback_none],
+    ["zoning", "classify", e.parcel_found], ["noparcel", "classify", e.parcel_none],
+    ["classify", "res", e.enrich_residential], ["classify", "com", e.enrich_commercial],
+    ["classify", "ind", e.enrich_industrial], ["classify", "d_review", e.classify_review],
+    ["res", "done", e.enrich_residential], ["com", "done", e.enrich_commercial], ["ind", "done", e.enrich_industrial],
+  ];
+  // The geocode→parcel split is estimated proportionally: the sankey can't carry
+  // identity across two forks, and the parcel outcome doesn't depend on the geocoder.
+
+  const W = 1040, H = 400, padTop = 24, padBottom = 16, nodeW = 10, colGap = 16;
+  const cols = 8, colX = (c) => 10 + c * ((W - 130 - 10) / (cols - 1));
+  const value = (id) => Math.max(
+    links.filter((l) => l[0] === id).reduce((a, l) => a + l[2], 0),
+    links.filter((l) => l[1] === id).reduce((a, l) => a + l[2], 0));
+  const scale = (H - padTop - padBottom - 3 * colGap) / total;
+  // Stack nodes within each column in declaration order; drops at the bottom.
+  for (let c = 0; c < cols; c++) {
+    const ids = Object.keys(nodes).filter((id) => nodes[id].col === c).sort((a, b) => (nodes[a].drop ? 1 : 0) - (nodes[b].drop ? 1 : 0));
+    const used = ids.reduce((a, id) => a + value(id) * scale, 0) + colGap * (ids.length - 1);
+    let y = padTop + (H - padTop - padBottom - used) / 2;
+    if (ids.some((id) => nodes[id].drop)) y = padTop;         // columns with a drop hang from the top
+    for (const id of ids) {
+      const n = nodes[id]; n.v = value(id); n.h = n.v * scale; n.x = colX(c);
+      n.y = n.drop ? H - padBottom - n.h - (id === "d_geo" ? 0 : 0) : y;
+      if (!n.drop) y += n.h + colGap;
+      n.outY = n.y; n.inY = n.y;
+    }
+  }
+  const s = svg(W, H);
+  const bands = el("g"), boxes = el("g"), labels = el("g");
+  for (const [a, b, v] of links) {
+    const A = nodes[a], B = nodes[b], h = v * scale;
+    const x0 = A.x + nodeW, x1 = B.x, y0 = A.outY, y1 = B.inY;
+    A.outY += h; B.inY += h;
+    const cx = (x0 + x1) / 2;
+    const d = `M${x0},${y0} C${cx},${y0} ${cx},${y1} ${x1},${y1} v${h} C${cx},${y1 + h} ${cx},${y0 + h} ${x0},${y0 + h} z`;
+    const p = el("path", { d, class: B.drop ? "band drop" : "band" });
+    hover(p, `${A.label} → ${B.label}\n${fmt(Math.round(v))} addresses (${(100 * v / total).toFixed(1)}%)`);
+    bands.append(p);
+  }
+  for (const [id, n] of Object.entries(nodes)) {
+    boxes.append(el("rect", { x: n.x, y: n.y, width: nodeW, height: Math.max(n.h, 2), rx: 2,
+      class: n.drop ? "node drop" : n.end ? "node end" : "node" }));
+    const right = true;
+    const lx = right ? n.x + nodeW + 8 : n.x - 8, anchor = right ? "start" : "end";
+    labels.append(el("text", { x: lx, y: n.y + Math.min(n.h / 2, 14) + 4, "text-anchor": anchor, class: "strong" }, n.label));
+    labels.append(el("text", { x: lx, y: n.y + Math.min(n.h / 2, 14) + 18, "text-anchor": anchor, class: "num faint" },
+      `${fmt(Math.round(n.v))} · ${(100 * n.v / total).toFixed(1)}%`));
+  }
+  s.append(bands, boxes, labels);
+  document.getElementById("flow").append(s);
+}
+
+
+// ---------------------------------------------------------------- flame graph
+{
+  const rows = DATA.call_tree;
+  const byId = Object.fromEntries(rows.map((r) => [r.call_path_id, { ...r, children: [] }]));
+  for (const n of Object.values(byId)) if (n.parent_call_path_id && byId[n.parent_call_path_id]) byId[n.parent_call_path_id].children.push(n);
+  const isUser = (n) => n.origin === "user";
+
+  // Merge every `evaluate` path into one tree, keyed by fqn at each level.
+  function merge(list) {
+    const out = new Map();
+    for (const n of list) {
+      const m = out.get(n.fqn) ?? { fqn: n.fqn, origin: n.origin, calls: 0, incl: 0, self: 0, kids: [] };
+      m.calls += n.calls_started; m.incl += n.inclusive_ns; m.self += n.self_ns; m.kids.push(...n.children);
+      out.set(n.fqn, m);
+    }
+    return [...out.values()].map((m) => ({ ...m, children: merge(m.kids) })).sort((a, b) => b.incl - a.incl);
+  }
+  // Optionally splice out runtime frames so a user frame's children are the next user frames below it.
+  function userOnly(n) {
+    const lift = (kids) => kids.flatMap((k) => isUser(k) ? [userOnly(k)] : lift(k.children));
+    return { ...n, children: lift(n.children) };
+  }
+  const roots = merge(rows.filter((r) => r.fqn === "user.evaluate").map((r) => byId[r.call_path_id]));
+  const root = roots[0];
+
+  function render(hideRuntime) {
+    const tree = hideRuntime ? userOnly(root) : root;
+    const W = 1040, rowH = 22, depthOf = (n) => 1 + Math.max(0, ...n.children.map(depthOf));
+    const H = depthOf(tree) * rowH + 24;
+    const s = svg(W, H);
+    const perCall = (ns, calls) => (ns / 1e6 / calls).toFixed(2);
+    function draw(n, x, y, w) {
+      if (w < 0.5) return;
+      const rt = !isUser(n);
+      const r = el("rect", { x, y, width: w, height: rowH - 1, rx: 2, class: rt ? "frame rt" : "frame" });
+      hover(r, `${n.fqn}\ncalls     ${fmt(n.calls)}\ninclusive ${perCall(n.incl, n.calls)} ms/call  (${(100 * n.incl / tree.incl).toFixed(1)}% of evaluate)\nself      ${perCall(n.self, n.calls)} ms/call`);
+      s.append(r);
+      if (w > 48) {
+        const label = n.fqn.replace(/^user\./, "").replace(/^baml\./, "");
+        const maxChars = Math.floor((w - 8) / 6.6);
+        s.append(el("text", { x: x + 5, y: y + 15, class: "frame-label",
+          style: `fill:${rt ? "var(--ink-2)" : "var(--surface)"}` }, label.length > maxChars ? label.slice(0, Math.max(0, maxChars - 1)) + "…" : label));
+      }
+      let cx = x;
+      const scale = w / Math.max(n.incl, n.children.reduce((a, c) => a + c.incl, 0));
+      for (const c of n.children) { const cw = c.incl * scale; draw(c, cx, y + rowH, cw); cx += cw; }
+    }
+    draw(tree, 0, 0, W);
+    s.append(el("text", { x: 0, y: H - 4, class: "faint" }, `← ${perCall(tree.incl, tree.calls)} ms per address, ${fmt(tree.calls)} addresses →`));
+    const host = document.getElementById("flame"); host.innerHTML = ""; host.append(s);
+  }
+  const box = document.getElementById("hide-runtime");
+  box.addEventListener("change", () => render(box.checked));
+  render(false);
+}
+
+// ---------------------------------------------------------------- funnel
+{
+  const order = [
+    ["parse_address", false], ["geocode", false], ["geocode_fallback", true], ["lookup_parcel", false],
+    ["classify_building", false], ["enrich_residential", true], ["enrich_commercial", true], ["enrich_industrial", true],
+  ];
+  const byStep = Object.fromEntries(DATA.funnel.map((r) => [step(r.step), r]));
+  const total = byStep.process_address.calls;
+  const rows = order.filter(([k]) => byStep[k]).map(([k, branch]) => ({
+    label: (branch ? "↳ " : "") + k, value: byStep[k].calls, branch, r: byStep[k],
+  }));
+  document.getElementById("funnel").append(hbars(rows, {
+    max: total, right: 330,
+    barCls: (r) => r.branch ? "bar branch" : "bar",
+    valueText: (r) => `${fmt(r.value)}`,
+    noteText: (r) => `${r.r.pct_of_addresses}% of addresses · ${r.r.avg_ms} ms avg`,
+    tipText: (r) => `${r.label.replace("↳ ", "")}\ncalls   ${r.r.calls}\nok      ${r.r.ok}\nerrored ${r.r.errored}\navg     ${r.r.avg_ms} ms`,
+  }));
+}
+
+// ---------------------------------------------------------------- dropouts
+{
+  const rows = DATA.dropouts.map((d) => ({ label: d.stage, value: d.addresses, d }));
+  const max = Math.max(...rows.map((r) => r.value)) * 1.15;
+  document.getElementById("dropouts").append(hbars(rows, {
+    width: 500, labelW: 90, max,
+    barCls: () => "bar drop",
+    valueText: (r) => fmt(r.value),
+    tipText: (r) => `${r.d.stage}: ${r.d.addresses} addresses\ne.g. ${r.d.example_address}\n${r.d.example_reason}`,
+  }));
+  const ul = document.createElement("div");
+  ul.className = "sub";
+  ul.innerHTML = DATA.dropouts.map((d) =>
+    `<div><b>${d.stage}</b> — <span class="mono" style="font-family:var(--mono);font-size:12px">${d.example_reason}</span></div>`).join("");
+  document.getElementById("dropouts").append(ul);
+}
+
+// ---------------------------------------------------------------- accuracy by branch
+{
+  const rows = DATA.accuracy_by_branch.map((b) => ({ label: b.branch, value: b.accuracy_pct, b }));
+  document.getElementById("branch").append(hbars(rows, {
+    width: 500, labelW: 210, max: 100,
+    valueText: (r) => `${r.value}%`,
+    noteText: (r) => `n=${r.b.addresses}`,
+    tipText: (r) => `${r.b.branch}\naccuracy ${r.b.accuracy_pct}%\naddresses ${r.b.addresses}`,
+  }));
+}
+
+// ---------------------------------------------------------------- confusion matrix
+{
+  const types = ["Residential", "Commercial", "Industrial", "MixedUse"];
+  const cols = { Residential: "as_residential", Commercial: "as_commercial", Industrial: "as_industrial", MixedUse: "as_mixed_use" };
+  const byType = Object.fromEntries(DATA.accuracy.map((r) => [r.expected, r]));
+  const cell = 74, left = 110, top = 34, gap = 2;
+  const w = left + types.length * cell + 90, h = top + types.length * cell + 4;
+  const s = svg(w, h);
+  s.append(el("text", { x: left + types.length * cell / 2, y: 12, "text-anchor": "middle", class: "faint" }, "predicted →"));
+  types.forEach((t, j) => s.append(el("text", { x: left + j * cell + cell / 2, y: 28, "text-anchor": "middle" }, t)));
+  s.append(el("text", { x: 8, y: top + types.length * cell / 2, class: "faint", transform: `rotate(-90 8 ${top + types.length * cell / 2})`, "text-anchor": "middle" }, "expected"));
+  const ramp = ["--seq-1", "--seq-2", "--seq-3", "--seq-4", "--seq-5"];
+  types.forEach((t, i) => {
+    const row = byType[t]; if (!row) return;
+    const y = top + i * cell;
+    s.append(el("text", { x: left - 10, y: y + cell / 2 + 4, "text-anchor": "end", class: "strong" }, t));
+    types.forEach((p, j) => {
+      const v = row[cols[p]], share = v / row.addresses;
+      const k = v === 0 ? -1 : Math.min(4, Math.floor(share * 5));
+      const x = left + j * cell;
+      const r = el("rect", { x: x + gap / 2, y: y + gap / 2, width: cell - gap, height: cell - gap, rx: 3,
+        fill: k < 0 ? "var(--grid)" : `var(${ramp[k]})` });
+      hover(r, `expected ${t}\npredicted ${p}\n${v} addresses (${(100 * share).toFixed(1)}%)`);
+      s.append(r);
+      const dark = k >= 3;
+      s.append(el("text", { x: x + cell / 2, y: y + cell / 2 + 4, "text-anchor": "middle", class: "cell-label",
+        style: `pointer-events:none; fill:${dark ? "var(--surface)" : "var(--ink)"}` }, v));
+    });
+    s.append(el("text", { x: left + types.length * cell + 12, y: y + cell / 2 + 4, class: "num" }, `${row.accuracy_pct}%`));
+    s.append(el("text", { x: left + types.length * cell + 12, y: y + cell / 2 + 18, class: "faint" }, `n=${row.addresses}`));
+  });
+  document.getElementById("confusion").append(s);
+}
+
+// ---------------------------------------------------------------- latency dumbbells
+{
+  const rows = DATA.latency.filter((r) => r.step !== "user.process_address");
+  const width = 500, labelW = 150, right = 20, rowH = 30, top = 10;
+  const h = top + rows.length * rowH + 28;
+  const s = svg(width, h);
+  const plotW = width - labelW - right;
+  const max = Math.ceil(Math.max(...rows.map((r) => r.p95_ms)) / 20) * 20;
+  const x = (v) => labelW + plotW * v / max;
+  for (let t = 0; t <= max; t += 20) {
+    s.append(el("line", { x1: x(t), x2: x(t), y1: top, y2: top + rows.length * rowH, class: "grid-line" }));
+    s.append(el("text", { x: x(t), y: h - 6, "text-anchor": "middle", class: "num faint" }, `${t} ms`));
+  }
+  rows.forEach((r, i) => {
+    const y = top + i * rowH + rowH / 2;
+    s.append(el("text", { x: labelW - 12, y: y + 4, "text-anchor": "end", class: "strong" }, step(r.step)));
+    const hit = el("rect", { x: labelW, y: y - rowH / 2, width: plotW, height: rowH, class: "hit" });
+    hover(hit, `${step(r.step)}\np50 ${r.p50_ms} ms\np95 ${r.p95_ms} ms\nmax ${r.max_ms} ms\ncalls ${r.calls}`);
+    s.append(hit);
+    s.append(el("line", { x1: x(r.p50_ms), x2: x(r.p95_ms), y1: y, y2: y, class: "dumb-line" }));
+    s.append(el("circle", { cx: x(r.p95_ms), cy: y, r: 5, class: "dot p95" }));
+    s.append(el("circle", { cx: x(r.p50_ms), cy: y, r: 5, class: "dot" }));
+  });
+  document.getElementById("latency").append(s);
+}
+
+// ---------------------------------------------------------------- review table
+{
+  const rows = DATA.needs_review;
+  document.getElementById("review").innerHTML = `<table>
+    <thead><tr><th>address</th><th>zoning code</th><th>guessed</th><th class="num">confidence</th></tr></thead>
+    <tbody>${rows.map((r) => `<tr><td class="mono">${r.address}</td><td class="mono">${r.zoning_code ?? "—"}</td><td>${r.guessed}</td><td class="num">${Number(r.confidence).toFixed(2)}</td></tr>`).join("")}</tbody>
+  </table>`;
+}
+</script>
